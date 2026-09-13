@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import {
     Alert,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,13 +14,100 @@ import {
 
 const STORAGE_KEY = '@atividades';
 const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
+const isWeb = Platform.OS === 'web';
 
 const AddActivityScreen = ({ navigation }) => {
   const [titulo, setTitulo] = useState('');
   const [materia, setMateria] = useState('');
   const [prazo, setPrazo] = useState('');
+  const [prazoDate, setPrazoDate] = useState(new Date());
   const [status, setStatus] = useState('Pendente');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+
+  const dateParaISO = (dataObj) => {
+    return dataObj.toISOString();
+  };
+
+  const formatarDataParaExibir = (dataObj) => {
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const ano = dataObj.getFullYear();
+    const hora = String(dataObj.getHours()).padStart(2, '0');
+    const minuto = String(dataObj.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
+  };
+
+  const parseDataPorTexto = (texto) => {
+    if (!texto || texto.trim() === '') return null;
+
+    const valor = texto.trim();
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/;
+    const match = valor.match(regex);
+
+    if (!match) return null;
+
+    const [, dia, mes, ano, hora, minuto] = match;
+    const data = new Date(Number(ano), Number(mes) - 1, Number(dia), Number(hora), Number(minuto));
+
+    if (Number.isNaN(data.getTime())) return null;
+
+    return data;
+  };
+
+  const paraDateValido = (valor) => {
+    if (valor && typeof valor.getTime === 'function') {
+      const t = valor.getTime();
+      if (!isNaN(t)) return new Date(t);
+    }
+    return new Date();
+  };
+
+  const abrirSeletorDataHora = () => {
+    if (Platform.OS !== 'android') {
+      setShowPicker(true);
+      return;
+    }
+
+    const valorInicial = paraDateValido(prazoDate);
+
+    DateTimePickerAndroid.open({
+      value: valorInicial,
+      mode: 'date',
+      onValueChange: (selectedDate) => {
+        if (!selectedDate) return;
+
+        const dataSelecionada = paraDateValido(selectedDate);
+        const apenasData = new Date(
+          dataSelecionada.getFullYear(),
+          dataSelecionada.getMonth(),
+          dataSelecionada.getDate()
+        );
+
+        DateTimePickerAndroid.open({
+          value: apenasData,
+          mode: 'time',
+          is24Hour: true,
+          onValueChange: (selectedTime) => {
+            if (!selectedTime) return;
+
+            const horaSelecionada = paraDateValido(selectedTime);
+
+            const dataFinal = new Date(
+              apenasData.getFullYear(),
+              apenasData.getMonth(),
+              apenasData.getDate(),
+              horaSelecionada.getHours(),
+              horaSelecionada.getMinutes()
+            );
+
+            setPrazoDate(dataFinal);
+            setPrazo(formatarDataParaExibir(dataFinal));
+          },
+        });
+      },
+    });
+  };
 
   const handleTitleChange = (value) => {
     setTitulo(value);
@@ -37,11 +126,15 @@ const AddActivityScreen = ({ navigation }) => {
 
     setErrorMessage('');
 
+    const prazoFinal = isWeb
+      ? (prazo ? parseDataPorTexto(prazo) : null)
+      : (prazo ? prazoDate : null);
+
     const novaAtividade = {
       id: Date.now(),
       titulo: tituloValidado,
       materia: materia.trim(),
-      prazo: prazo.trim(),
+      prazo: prazoFinal ? dateParaISO(prazoFinal) : null,
       status,
     };
 
@@ -100,13 +193,49 @@ const AddActivityScreen = ({ navigation }) => {
         />
 
         <Text style={styles.label}>Prazo</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex.: 17-06-2026"
-          value={prazo}
-          onChangeText={setPrazo}
-          keyboardType="default"
-        />
+
+        {isWeb ? (
+          <TextInput
+            style={styles.input}
+            placeholder="DD/MM/AAAA HH:mm"
+            value={prazo}
+            onChangeText={(texto) => {
+              setPrazo(texto);
+              const dataSelecionada = parseDataPorTexto(texto);
+              if (dataSelecionada) {
+                setPrazoDate(dataSelecionada);
+              }
+            }}
+            keyboardType="numeric"
+          />
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.input}
+              onPress={abrirSeletorDataHora}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: prazo ? '#333333' : '#999999', fontSize: 15 }}>
+                {prazo ? prazo : 'Selecionar data e hora'}
+              </Text>
+            </TouchableOpacity>
+
+            {showPicker && Platform.OS === 'ios' && (
+              <DateTimePicker
+                value={prazoDate}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowPicker(false);
+                  if (selectedDate) {
+                    setPrazoDate(selectedDate);
+                    setPrazo(formatarDataParaExibir(selectedDate));
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
 
         <Text style={styles.label}>Status</Text>
         <View style={styles.statusRow}>
@@ -181,7 +310,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: '#333333',
     fontSize: 15,
+    justifyContent: 'center',
     marginBottom: 16,
+    minHeight: 48,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
