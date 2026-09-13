@@ -1,15 +1,88 @@
-//A tela de Detalhes é omde mostramos todas as informações de uma atividade selecionada na Lista.
-//Ela recebe a atividade selecionada como parâmetro da navegação e exibe seus detalhes.
-//Comecei o código importando as bibliotecas necessárias para criar a tela e estilizar os componentes.
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-//Declarei a função DetailScreen que recebe as props { route, navigation }.
-//A prop route contém os parâmetros passados na navegação, e a prop navigation permite voltar para a tela anterior.
+const STORAGE_KEY = '@atividades';
+const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
+
+const getStatusColor = (status) => {
+  if (status === 'Concluído') return '#4CAF50';
+  if (status === 'Em andamento') return '#FF9800';
+  if (status === 'Pendente') return '#F44336';
+  return '#757575';
+};
+
+const formatarPrazo = (prazo) => {
+  if (!prazo) return 'Não informado';
+
+  const data = new Date(prazo);
+  if (Number.isNaN(data.getTime())) return prazo;
+
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const ano = data.getFullYear();
+  const hora = String(data.getHours()).padStart(2, '0');
+  const minuto = String(data.getMinutes()).padStart(2, '0');
+
+  return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
+};
+
 const DetailScreen = ({ route, navigation }) => {
   const { atividade } = route.params || {};
+  const [statusAtual, setStatusAtual] = useState(atividade?.status || 'Pendente');
 
-//Aqui verifica se a atividade existe usando uma condicional.  
+  const handleChangeStatus = async (novoStatus) => {
+    if (novoStatus === statusAtual) return;
+
+    const statusAnterior = statusAtual;
+    setStatusAtual(novoStatus);
+
+    try {
+      const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
+      const atividades = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
+      const listaAtualizada = Array.isArray(atividades)
+        ? atividades.map((item) =>
+            String(item.id) === String(atividade.id)
+              ? { ...item, status: novoStatus }
+              : item
+          )
+        : [];
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+    } catch (error) {
+      setStatusAtual(statusAnterior);
+      Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');
+    }
+  };
+
+  const handleExcluir = () => {
+    Alert.alert(
+      'Excluir atividade',
+      'Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
+              const atividades = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
+              const listaAtualizada = Array.isArray(atividades)
+                ? atividades.filter((item) => String(item.id) !== String(atividade.id))
+                : [];
+
+              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir a atividade.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (!atividade) {
     return (
       <View style={styles.container}>
@@ -18,7 +91,6 @@ const DetailScreen = ({ route, navigation }) => {
     );
   }
 
-  //Essa parte do código é responsável por renderizar a tela de detalhes da atividade selecionada.
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -29,13 +101,54 @@ const DetailScreen = ({ route, navigation }) => {
         <Text style={styles.value}>{atividade.materia}</Text>
 
         <Text style={styles.label}>Prazo:</Text>
-        <Text style={styles.value}>{atividade.prazo}</Text>
+        <Text style={styles.value}>{formatarPrazo(atividade.prazo)}</Text>
 
-        <Text style={styles.label}>Status:</Text>
-        <Text style={styles.value}>{atividade.status}</Text>
+        <Text style={styles.label}>Status atual:</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(statusAtual) }]}>
+          <Text style={styles.statusBadgeText}>{statusAtual}</Text>
+        </View>
       </View>
 
-      <TouchableOpacity //Responsável por criar o botão de voltar para a tela anterior.
+      <Text style={styles.sectionLabel}>Alterar status para:</Text>
+      <View style={styles.statusRow}>
+        {STATUS_OPTIONS.map((option) => {
+          const isSelected = option === statusAtual;
+
+          return (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.statusOption,
+                isSelected && {
+                  backgroundColor: getStatusColor(option),
+                  borderColor: getStatusColor(option),
+                },
+              ]}
+              onPress={() => handleChangeStatus(option)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.statusOptionText,
+                  isSelected && styles.statusOptionTextSelected,
+                ]}
+              >
+                {option}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={handleExcluir}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.deleteButtonText}>Excluir Atividade</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
         activeOpacity={0.8}
@@ -46,7 +159,6 @@ const DetailScreen = ({ route, navigation }) => {
   );
 };
 
-//Aqui é o CSS. 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -80,8 +192,66 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
   },
-  backButton: {
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 6,
+  },
+  statusBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333333',
     marginTop: 24,
+    marginBottom: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  statusOption: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: '#D9D9D9',
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 48,
+    marginRight: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
+  },
+  statusOptionText: {
+    color: '#555555',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  statusOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    marginTop: 24,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D32F2F',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#D32F2F',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    marginTop: 12,
     backgroundColor: '#2196F3',
     borderRadius: 10,
     paddingVertical: 14,
