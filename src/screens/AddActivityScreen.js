@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import {
     Alert,
     Platform,
@@ -24,6 +25,18 @@ const AddActivityScreen = ({ navigation }) => {
   const [status, setStatus] = useState('Pendente');
   const [errorMessage, setErrorMessage] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setTitulo('');
+      setMateria('');
+      setPrazo('');
+      setPrazoDate(new Date());
+      setStatus('Pendente');
+      setErrorMessage('');
+      setShowPicker(false);
+    }, [])
+  );
 
   const dateParaISO = (dataObj) => {
     return dataObj.toISOString();
@@ -74,8 +87,8 @@ const AddActivityScreen = ({ navigation }) => {
     DateTimePickerAndroid.open({
       value: valorInicial,
       mode: 'date',
-      onValueChange: (selectedDate) => {
-        if (!selectedDate) return;
+      onChange: (event, selectedDate) => {
+        if (event.type !== 'set' || !selectedDate) return;
 
         const dataSelecionada = paraDateValido(selectedDate);
         const apenasData = new Date(
@@ -88,8 +101,8 @@ const AddActivityScreen = ({ navigation }) => {
           value: apenasData,
           mode: 'time',
           is24Hour: true,
-          onValueChange: (selectedTime) => {
-            if (!selectedTime) return;
+          onChange: (eventTime, selectedTime) => {
+            if (eventTime.type !== 'set' || !selectedTime) return;
 
             const horaSelecionada = paraDateValido(selectedTime);
 
@@ -126,9 +139,7 @@ const AddActivityScreen = ({ navigation }) => {
 
     setErrorMessage('');
 
-    const prazoFinal = isWeb
-      ? (prazo ? parseDataPorTexto(prazo) : null)
-      : (prazo ? prazoDate : null);
+    const prazoFinal = prazo ? parseDataPorTexto(prazo) : null;
 
     const novaAtividade = {
       id: Date.now(),
