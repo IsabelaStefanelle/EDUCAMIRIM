@@ -6,14 +6,12 @@
 // TouchableOpacity: elemento clicável que diminui a transparência ao ser tocado (nosso botão).
 // StyleSheet: para criar a nossa folha de estilos (o "CSS" do React Native).
 // Alert: para abrir aquela caixinha de aviso nativa do celular.
-import React from 'react';
 import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 // Criei um array (array = lista) chamado "atividades" com 3 objetos estáticos (estático = não muda, apenas se mexer diretamente no código).
@@ -65,18 +63,9 @@ const ListScreen = ({ navigation }) => {
     navigation.navigate('Detalhe', { atividade });
   };
 
-  // Função para exibir o alerta ao clicar no botão de adicionar.
+  // Navega para a tela de cadastro de nova atividade.
   const handleAddActivity = () => {
-    Alert.alert(
-      "Cadastro de Atividades",
-      "O cadastro de novas atividades será liberado na Fase 2 do projeto.",
-      [
-        {
-          text: "OK",
-          onPress: () => console.log("Alerta confirmado"),
-        }
-      ]
-    );
+    navigation.navigate('Adicionar');
   };
 
   // Essa função define o visual de UM único item da lista. A FlatList vai repeti-la para cada atividade.
