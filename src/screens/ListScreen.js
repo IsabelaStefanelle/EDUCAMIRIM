@@ -1,9 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const STORAGE_KEY = '@atividades';
+import { carregarAtividades, excluirAtividade } from './storage';
 
 const getStatusColor = (status) => {
   if (status === 'Concluído') return '#4CAF50';
@@ -15,21 +13,15 @@ const getStatusColor = (status) => {
 const ListScreen = ({ navigation }) => {
   const [atividades, setAtividades] = useState([]);
 
-  const carregarAtividades = useCallback(async () => {
-    try {
-      const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
-      const lista = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
-      setAtividades(Array.isArray(lista) ? lista : []);
-    } catch (error) {
-      console.log('Erro ao carregar atividades:', error);
-      setAtividades([]);
-    }
+  const buscarAtividades = useCallback(async () => {
+    const lista = await carregarAtividades();
+    setAtividades(lista);
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      carregarAtividades();
-    }, [carregarAtividades])
+      buscarAtividades();
+    }, [buscarAtividades])
   );
 
   const handleNavigateToDetail = (atividade) => {
@@ -51,13 +43,7 @@ const ListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
-              const lista = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
-              const listaAtualizada = Array.isArray(lista)
-                ? lista.filter((item) => String(item.id) !== String(atividade.id))
-                : [];
-
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+              const listaAtualizada = await excluirAtividade(atividade.id);
               setAtividades(listaAtualizada);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
@@ -68,6 +54,23 @@ const ListScreen = ({ navigation }) => {
     );
   };
 
+  const meses = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+  ];
+
+  const formatarDataParaExibir = (data) => {
+    if (!data) return 'Sem prazo';
+
+  const dataObj = new Date(data);
+    if (Number.isNaN(dataObj.getTime())) return data;
+
+  const dia = dataObj.getDate();
+  const mes = meses[dataObj.getMonth()];
+
+  return `Até ${dia} de ${mes}`;
+  };
+  
   const renderActivityItem = ({ item }) => (
     <TouchableOpacity
       style={styles.cardContainer}
@@ -93,7 +96,7 @@ const ListScreen = ({ navigation }) => {
         <Text style={styles.subjectText}>{item.materia}</Text>
 
         <View style={styles.footerSection}>
-          <Text style={styles.deadlineText}>📆 {item.prazo ? item.prazo : 'Sem prazo'}</Text>
+          <Text style={styles.deadlineText}>📆 {formatarDataParaExibir(item.prazo)}</Text>
         </View>
       </View>
     </TouchableOpacity>

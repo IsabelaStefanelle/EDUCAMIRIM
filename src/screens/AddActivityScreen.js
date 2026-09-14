@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
@@ -12,8 +11,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { adicionarAtividade } from './storage';
 
-const STORAGE_KEY = '@atividades';
 const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
 const isWeb = Platform.OS === 'web';
 
@@ -87,8 +86,8 @@ const AddActivityScreen = ({ navigation }) => {
     DateTimePickerAndroid.open({
       value: valorInicial,
       mode: 'date',
-      onChange: (event, selectedDate) => {
-        if (event.type !== 'set' || !selectedDate) return;
+      onValueChange: (event, selectedDate) => {
+        if (!selectedDate) return;
 
         const dataSelecionada = paraDateValido(selectedDate);
         const apenasData = new Date(
@@ -101,8 +100,8 @@ const AddActivityScreen = ({ navigation }) => {
           value: apenasData,
           mode: 'time',
           is24Hour: true,
-          onChange: (eventTime, selectedTime) => {
-            if (eventTime.type !== 'set' || !selectedTime) return;
+          onValueChange: (eventTime, selectedTime) => {
+            if (!selectedTime) return;
 
             const horaSelecionada = paraDateValido(selectedTime);
 
@@ -150,13 +149,7 @@ const AddActivityScreen = ({ navigation }) => {
     };
 
     try {
-      const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
-      const atividadesExistentes = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
-      const listaAtualizada = Array.isArray(atividadesExistentes)
-        ? [...atividadesExistentes, novaAtividade]
-        : [novaAtividade];
-
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+      await adicionarAtividade(novaAtividade);
 
       Alert.alert(
         'Sucesso',

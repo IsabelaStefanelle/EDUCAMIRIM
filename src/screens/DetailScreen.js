@@ -1,8 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { atualizarAtividade, excluirAtividade } from './storage';
 
-const STORAGE_KEY = '@atividades';
 const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
 
 const getStatusColor = (status) => {
@@ -38,17 +37,7 @@ const DetailScreen = ({ route, navigation }) => {
     setStatusAtual(novoStatus);
 
     try {
-      const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
-      const atividades = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
-      const listaAtualizada = Array.isArray(atividades)
-        ? atividades.map((item) =>
-            String(item.id) === String(atividade.id)
-              ? { ...item, status: novoStatus }
-              : item
-          )
-        : [];
-
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+      await atualizarAtividade(atividade.id, { status: novoStatus });
     } catch (error) {
       setStatusAtual(statusAnterior);
       Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');
@@ -66,13 +55,7 @@ const DetailScreen = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const atividadesSalvas = await AsyncStorage.getItem(STORAGE_KEY);
-              const atividades = atividadesSalvas ? JSON.parse(atividadesSalvas) : [];
-              const listaAtualizada = Array.isArray(atividades)
-                ? atividades.filter((item) => String(item.id) !== String(atividade.id))
-                : [];
-
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(listaAtualizada));
+              await excluirAtividade(atividade.id);
               navigation.goBack();
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
