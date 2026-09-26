@@ -1,15 +1,10 @@
-import { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { atualizarAtividade, excluirAtividade } from './storage';
-
-const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
-
-const getStatusColor = (status) => {
-  if (status === 'Concluído') return '#4CAF50';
-  if (status === 'Em andamento') return '#FF9800';
-  if (status === 'Pendente') return '#F44336';
-  return '#757575';
-};
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { STATUS_CORES, STATUS_COR_FALLBACK, STATUS_OPCOES } from '../data/status';
+import { atualizarAtividade, carregarAtividades, excluirAtividade } from '../data/storage';
+import { CORES } from '../data/theme';
 
 const formatarPrazo = (prazo) => {
   if (!prazo) return 'Não informado';
@@ -27,8 +22,33 @@ const formatarPrazo = (prazo) => {
 };
 
 const DetailScreen = ({ route, navigation }) => {
-  const { atividade } = route.params || {};
-  const [statusAtual, setStatusAtual] = useState(atividade?.status || 'Pendente');
+  const { id } = route.params || {};
+  const [atividade, setAtividade] = useState(null);
+  const [statusAtual, setStatusAtual] = useState('Pendente');
+  const [carregando, setCarregando] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+      setCarregando(true);
+
+      const buscarAtividade = async () => {
+        const atividades = await carregarAtividades();
+        const atividadeAtual = atividades.find((item) => String(item.id) === String(id)) || null;
+
+        if (ativo) {
+          setAtividade(atividadeAtual);
+          setStatusAtual(atividadeAtual?.status || 'Pendente');
+          setCarregando(false);
+        }
+      };
+
+      buscarAtividade();
+      return () => {
+        ativo = false;
+      };
+    }, [id])
+  );
 
   const handleChangeStatus = async (novoStatus) => {
     if (novoStatus === statusAtual) return;
@@ -37,7 +57,11 @@ const DetailScreen = ({ route, navigation }) => {
     setStatusAtual(novoStatus);
 
     try {
-      await atualizarAtividade(atividade.id, { status: novoStatus });
+      const listaAtualizada = await atualizarAtividade(atividade.id, { status: novoStatus });
+      const atividadeAtualizada = listaAtualizada.find(
+        (item) => String(item.id) === String(atividade.id)
+      );
+      if (atividadeAtualizada) setAtividade(atividadeAtualizada);
     } catch (error) {
       setStatusAtual(statusAnterior);
       Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');
@@ -66,16 +90,34 @@ const DetailScreen = ({ route, navigation }) => {
     );
   };
 
+  if (carregando) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={CORES.primaria} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!atividade) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.emptyText}>Nenhuma atividade foi selecionada.</Text>
-      </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!atividade) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.emptyText}>Nenhuma atividade foi selecionada.</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.label}>Título:</Text>
         <Text style={styles.value}>{atividade.titulo}</Text>
@@ -87,14 +129,14 @@ const DetailScreen = ({ route, navigation }) => {
         <Text style={styles.value}>{formatarPrazo(atividade.prazo)}</Text>
 
         <Text style={styles.label}>Status atual:</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(statusAtual) }]}>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_CORES[statusAtual] || STATUS_COR_FALLBACK }]}>
           <Text style={styles.statusBadgeText}>{statusAtual}</Text>
         </View>
       </View>
 
       <Text style={styles.sectionLabel}>Alterar status para:</Text>
       <View style={styles.statusRow}>
-        {STATUS_OPTIONS.map((option) => {
+        {STATUS_OPCOES.map((option) => {
           const isSelected = option === statusAtual;
 
           return (
@@ -103,8 +145,8 @@ const DetailScreen = ({ route, navigation }) => {
               style={[
                 styles.statusOption,
                 isSelected && {
-                  backgroundColor: getStatusColor(option),
-                  borderColor: getStatusColor(option),
+                  backgroundColor: STATUS_CORES[option] || STATUS_COR_FALLBACK,
+                  borderColor: STATUS_CORES[option] || STATUS_COR_FALLBACK,
                 },
               ]}
               onPress={() => handleChangeStatus(option)}
@@ -138,23 +180,28 @@ const DetailScreen = ({ route, navigation }) => {
       >
         <Text style={styles.backButtonText}>Voltar</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: CORES.fundo,
     padding: 20,
     justifyContent: 'center',
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CORES.cartao,
     borderRadius: 12,
     padding: 20,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -162,17 +209,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: CORES.texto,
     marginTop: 12,
   },
   value: {
     fontSize: 15,
-    color: '#555555',
+    color: CORES.textoTerciario,
     marginTop: 4,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666666',
+    color: CORES.textoSecundario,
     textAlign: 'center',
   },
   statusBadge: {
@@ -183,14 +230,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   statusBadgeText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontSize: 13,
     fontWeight: '700',
   },
   sectionLabel: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#333333',
+    color: CORES.texto,
     marginTop: 24,
     marginBottom: 8,
   },
@@ -202,46 +249,46 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: '#D9D9D9',
+    borderColor: CORES.borda,
     borderRadius: 8,
     borderWidth: 1,
     minHeight: 48,
     marginRight: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CORES.cartao,
     paddingHorizontal: 4,
   },
   statusOptionText: {
-    color: '#555555',
+    color: CORES.textoTerciario,
     fontSize: 12,
     textAlign: 'center',
   },
   statusOptionTextSelected: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontWeight: 'bold',
   },
   deleteButton: {
     marginTop: 24,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#D32F2F',
+    backgroundColor: CORES.cartao,
+    borderColor: CORES.erro,
     borderWidth: 1,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#D32F2F',
+    color: CORES.erro,
     fontSize: 16,
     fontWeight: 'bold',
   },
   backButton: {
     marginTop: 12,
-    backgroundColor: '#2196F3',
+    backgroundColor: CORES.primaria,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontSize: 16,
     fontWeight: 'bold',
   },

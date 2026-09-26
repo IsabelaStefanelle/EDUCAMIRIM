@@ -67,7 +67,7 @@ Sincronização de prazos e horários com a Google Agenda.
 
  
 
-6. Justificativa da Escolha do Tema 
+Justificativa da Escolha do Tema:
 
 A escolha do tema Educação se justifica pela vivência dos membros com os problemas que o aplicativo sugere resolver.  
 

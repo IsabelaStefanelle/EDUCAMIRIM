@@ -1,8 +1,9 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
     Alert,
+    KeyboardAvoidingView,
     Platform,
     ScrollView,
     StyleSheet,
@@ -11,9 +12,11 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { adicionarAtividade } from './storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { STATUS_OPCOES } from '../data/status';
+import { adicionarAtividade } from '../data/storage';
+import { CORES } from '../data/theme';
 
-const STATUS_OPTIONS = ['Pendente', 'Em andamento', 'Concluído'];
 const isWeb = Platform.OS === 'web';
 
 const AddActivityScreen = ({ navigation }) => {
@@ -24,6 +27,8 @@ const AddActivityScreen = ({ navigation }) => {
   const [status, setStatus] = useState('Pendente');
   const [errorMessage, setErrorMessage] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const salvandoRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,6 +134,8 @@ const AddActivityScreen = ({ navigation }) => {
   };
 
   const handleSave = async () => {
+    if (salvando || salvandoRef.current) return;
+
     const tituloValidado = titulo.trim();
 
     if (!tituloValidado) {
@@ -148,6 +155,8 @@ const AddActivityScreen = ({ navigation }) => {
       status,
     };
 
+    salvandoRef.current = true;
+    setSalvando(true);
     try {
       await adicionarAtividade(novaAtividade);
 
@@ -167,15 +176,23 @@ const AddActivityScreen = ({ navigation }) => {
     } catch (error) {
       console.log('Erro ao salvar atividade:', error);
       Alert.alert('Erro', 'Não foi possível salvar a atividade.');
+    } finally {
+      salvandoRef.current = false;
+      setSalvando(false);
     }
   };
 
   return (
-    <ScrollView
-      style={styles.scrollContainer}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
       <View style={styles.card}>
         <Text style={styles.label}>Título *</Text>
         <TextInput
@@ -219,7 +236,7 @@ const AddActivityScreen = ({ navigation }) => {
               onPress={abrirSeletorDataHora}
               activeOpacity={0.8}
             >
-              <Text style={{ color: prazo ? '#333333' : '#999999', fontSize: 15 }}>
+              <Text style={{ color: prazo ? CORES.texto : CORES.textoSuave, fontSize: 15 }}>
                 {prazo ? prazo : 'Selecionar data e hora'}
               </Text>
             </TouchableOpacity>
@@ -243,7 +260,7 @@ const AddActivityScreen = ({ navigation }) => {
 
         <Text style={styles.label}>Status</Text>
         <View style={styles.statusRow}>
-          {STATUS_OPTIONS.map((option) => {
+          {STATUS_OPCOES.map((option) => {
             const isSelected = option === status;
 
             return (
@@ -264,9 +281,10 @@ const AddActivityScreen = ({ navigation }) => {
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSave}
+          disabled={salvando}
           activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>Salvar</Text>
+          <Text style={styles.saveButtonText}>{salvando ? 'Salvando' : 'Salvar'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -277,13 +295,22 @@ const AddActivityScreen = ({ navigation }) => {
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: CORES.fundo,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: CORES.fundo,
     flex: 1,
   },
   content: {
@@ -291,28 +318,28 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CORES.cartao,
     borderRadius: 12,
     elevation: 3,
     padding: 20,
-    shadowColor: '#000000',
+    shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   label: {
-    color: '#333333',
+    color: CORES.texto,
     fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 8,
     marginTop: 4,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#D9D9D9',
+    backgroundColor: CORES.cartao,
+    borderColor: CORES.borda,
     borderRadius: 8,
     borderWidth: 1,
-    color: '#333333',
+    color: CORES.texto,
     fontSize: 15,
     justifyContent: 'center',
     marginBottom: 16,
@@ -321,10 +348,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   inputError: {
-    borderColor: '#D32F2F',
+    borderColor: CORES.erro,
   },
   errorText: {
-    color: '#D32F2F',
+    color: CORES.erro,
     fontSize: 13,
     marginBottom: 16,
   },
@@ -334,7 +361,7 @@ const styles = StyleSheet.create({
   },
   statusButton: {
     alignItems: 'center',
-    borderColor: '#D9D9D9',
+    borderColor: CORES.borda,
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -344,39 +371,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   selectedStatus: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: CORES.primaria,
+    borderColor: CORES.primaria,
   },
   statusButtonText: {
-    color: '#555555',
+    color: CORES.textoTerciario,
     fontSize: 12,
     textAlign: 'center',
   },
   selectedStatusText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontWeight: 'bold',
   },
   saveButton: {
     alignItems: 'center',
-    backgroundColor: '#2196F3',
+    backgroundColor: CORES.primaria,
     borderRadius: 10,
     paddingVertical: 14,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontSize: 16,
     fontWeight: 'bold',
   },
   cancelButton: {
     alignItems: 'center',
-    borderColor: '#A9A9A9',
+    borderColor: CORES.bordaNeutra,
     borderRadius: 10,
     borderWidth: 1,
     marginTop: 12,
     paddingVertical: 13,
   },
   cancelButtonText: {
-    color: '#666666',
+    color: CORES.textoSecundario,
     fontSize: 16,
     fontWeight: 'bold',
   },

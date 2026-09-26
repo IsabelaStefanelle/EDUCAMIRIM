@@ -1,31 +1,37 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { carregarAtividades, excluirAtividade } from './storage';
-
-const getStatusColor = (status) => {
-  if (status === 'Concluído') return '#4CAF50';
-  if (status === 'Em andamento') return '#FF9800';
-  if (status === 'Pendente') return '#F44336';
-  return '#757575';
-};
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { STATUS_CORES, STATUS_COR_FALLBACK } from '../data/status';
+import { carregarAtividades, excluirAtividade } from '../data/storage';
+import { CORES } from '../data/theme';
 
 const ListScreen = ({ navigation }) => {
   const [atividades, setAtividades] = useState([]);
-
-  const buscarAtividades = useCallback(async () => {
-    const lista = await carregarAtividades();
-    setAtividades(lista);
-  }, []);
+  const [carregando, setCarregando] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
+      let ativo = true;
+      setCarregando(true);
+
+      const buscarAtividades = async () => {
+        const lista = await carregarAtividades();
+        if (ativo) {
+          setAtividades(lista);
+          setCarregando(false);
+        }
+      };
+
       buscarAtividades();
-    }, [buscarAtividades])
+      return () => {
+        ativo = false;
+      };
+    }, [])
   );
 
   const handleNavigateToDetail = (atividade) => {
-    navigation.navigate('Detalhe', { atividade });
+    navigation.navigate('Detalhe', { id: atividade.id });
   };
 
   const handleAddActivity = () => {
@@ -86,7 +92,7 @@ const ListScreen = ({ navigation }) => {
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: getStatusColor(item.status) },
+              { backgroundColor: STATUS_CORES[item.status] || STATUS_COR_FALLBACK },
             ]}
           >
             <Text style={styles.statusText}>{item.status}</Text>
@@ -102,8 +108,18 @@ const ListScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  if (carregando) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={CORES.primaria} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={atividades}
         keyExtractor={(item) => item.id.toString()}
@@ -124,14 +140,19 @@ const ListScreen = ({ navigation }) => {
       >
         <Text style={styles.addButtonText}>+ Adicionar Atividade</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: CORES.fundo,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listContent: {
     flexGrow: 1,
@@ -144,15 +165,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#666666',
+    color: CORES.textoSecundario,
     fontSize: 14,
   },
   cardContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CORES.cartao,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -170,7 +191,7 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: CORES.texto,
     flex: 1,
     marginRight: 8,
   },
@@ -180,41 +201,41 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   statusText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontSize: 12,
     fontWeight: '600',
   },
   subjectText: {
     fontSize: 14,
-    color: '#666666',
+    color: CORES.textoSecundario,
     marginBottom: 12,
   },
   footerSection: {
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: CORES.bordaSuave,
     paddingTop: 12,
   },
   deadlineText: {
     fontSize: 13,
-    color: '#999999',
+    color: CORES.textoSuave,
   },
   addButton: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
-    backgroundColor: '#2196F3',
+    backgroundColor: CORES.primaria,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   addButtonText: {
-    color: '#FFFFFF',
+    color: CORES.textoBranco,
     fontSize: 16,
     fontWeight: 'bold',
   },
