@@ -1,13 +1,13 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  excluirAtividade,
-  inicializarBanco,
-  listarAtividades,
-  listarAtividadesPorStatus,
-  listarStatus,
+    excluirAtividade,
+    inicializarBanco,
+    listarAtividades,
+    listarAtividadesPorStatus,
+    listarStatus,
 } from '../data/database';
 import { CORES } from '../data/theme';
 
@@ -15,6 +15,9 @@ const carregarListaPorFiltro = (statusId) =>
   statusId === null ? listarAtividades() : listarAtividadesPorStatus(statusId);
 
 const ListScreen = ({ navigation }) => {
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, 720);
+  const horizontalPadding = Math.min(24, Math.max(12, width * 0.045));
   const [atividades, setAtividades] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [statusDisponiveis, setStatusDisponiveis] = useState([]);
@@ -181,7 +184,7 @@ const ListScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.filterRow}>
+      <View style={[styles.filterRow, { width: contentWidth, paddingHorizontal: horizontalPadding }]}>
         <TouchableOpacity
           style={[
             styles.filterButton,
@@ -219,6 +222,14 @@ const ListScreen = ({ navigation }) => {
         })}
       </View>
 
+      <TouchableOpacity
+        style={[styles.addButton, { width: contentWidth - horizontalPadding * 2 }]}
+        onPress={handleAddActivity}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.addButtonText}>+ Adicionar Atividade</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={atividades}
         keyExtractor={(item) => item.id.toString()}
@@ -232,17 +243,9 @@ const ListScreen = ({ navigation }) => {
             </Text>
           </View>
         }
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { width: contentWidth, paddingHorizontal: horizontalPadding }]}
         scrollEnabled={true}
       />
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAddActivity}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.addButtonText}>+ Adicionar Atividade</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -259,14 +262,13 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 100,
+    alignSelf: 'center',
+    paddingTop: 12,
   },
   filterRow: {
+    alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
     paddingTop: 12,
   },
   filterButton: {
@@ -352,12 +354,10 @@ const styles = StyleSheet.create({
     color: CORES.textoSuave,
   },
   addButton: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
+    alignSelf: 'center',
     backgroundColor: CORES.primaria,
-    paddingVertical: 16,
+    marginTop: 4,
+    paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     elevation: 5,

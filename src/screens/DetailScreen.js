@@ -1,8 +1,8 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { STATUS_CORES, STATUS_COR_FALLBACK, STATUS_OPCOES } from '../data/status';
+import { STATUS_COR_FALLBACK, STATUS_CORES, STATUS_OPCOES } from '../data/status';
 import { atualizarAtividade, carregarAtividades, excluirAtividade } from '../data/storage';
 import { CORES } from '../data/theme';
 
@@ -22,6 +22,9 @@ const formatarPrazo = (prazo) => {
 };
 
 const DetailScreen = ({ route, navigation }) => {
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, 640);
+  const horizontalPadding = Math.min(24, Math.max(12, width * 0.05));
   const { id } = route.params || {};
   const [atividade, setAtividade] = useState(null);
   const [statusAtual, setStatusAtual] = useState(STATUS_OPCOES[0]);
@@ -109,14 +112,19 @@ const DetailScreen = ({ route, navigation }) => {
   if (!atividade) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Nenhuma atividade foi selecionada.</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>Nenhuma atividade foi selecionada.</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { width: contentWidth, paddingHorizontal: horizontalPadding }]}
+      >
+      <View style={[styles.card, { padding: Math.min(24, Math.max(16, width * 0.055)) }]}>
         <Text style={styles.label}>Título:</Text>
         <Text style={styles.value}>{atividade.titulo}</Text>
 
@@ -178,6 +186,7 @@ const DetailScreen = ({ route, navigation }) => {
       >
         <Text style={styles.backButtonText}>Voltar</Text>
       </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -186,8 +195,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: CORES.fundo,
-    padding: 20,
+  },
+  content: {
+    alignSelf: 'center',
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingVertical: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -197,7 +210,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: CORES.cartao,
     borderRadius: 12,
-    padding: 20,
     elevation: 3,
     shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 2 },
@@ -241,6 +253,7 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 8,
   },
   statusOption: {
@@ -250,8 +263,10 @@ const styles = StyleSheet.create({
     borderColor: CORES.borda,
     borderRadius: 8,
     borderWidth: 1,
+    minWidth: 88,
     minHeight: 48,
     marginRight: 8,
+    marginBottom: 8,
     backgroundColor: CORES.cartao,
     paddingHorizontal: 4,
   },

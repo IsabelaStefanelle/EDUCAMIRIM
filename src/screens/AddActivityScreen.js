@@ -2,15 +2,16 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS_OPCOES } from '../data/status';
@@ -20,6 +21,9 @@ import { CORES } from '../data/theme';
 const isWeb = Platform.OS === 'web';
 
 const AddActivityScreen = ({ navigation }) => {
+  const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, 640);
+  const horizontalPadding = Math.min(24, Math.max(12, width * 0.05));
   const [titulo, setTitulo] = useState('');
   const [materia, setMateria] = useState('');
   const [prazo, setPrazo] = useState('');
@@ -190,10 +194,10 @@ const AddActivityScreen = ({ navigation }) => {
       >
         <ScrollView
           style={styles.scrollContainer}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { width: contentWidth, paddingHorizontal: horizontalPadding }]}
           keyboardShouldPersistTaps="handled"
         >
-      <View style={styles.card}>
+      <View style={[styles.card, { padding: Math.min(24, Math.max(16, width * 0.055)) }]}>
         <Text style={styles.label}>Título *</Text>
         <TextInput
           style={[styles.input, errorMessage ? styles.inputError : null]}
@@ -314,14 +318,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    alignSelf: 'center',
     flexGrow: 1,
-    padding: 20,
+    paddingVertical: 20,
   },
   card: {
     backgroundColor: CORES.cartao,
     borderRadius: 12,
     elevation: 3,
-    padding: 20,
     shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -357,6 +361,7 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 24,
   },
   statusButton: {
@@ -366,7 +371,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
+    marginBottom: 8,
     marginRight: 8,
+    minWidth: 88,
     minHeight: 48,
     paddingHorizontal: 4,
   },
