@@ -2,7 +2,7 @@
 
 **VIISRE** — Trabalho em Grupo de PAM I
 
-Aplicativo de **Agenda de Estudos** para organização de prazos acadêmicos, alertas de prazos e integração com a agenda pessoal.
+Aplicativo móvel de **Agenda de Estudos** para cadastrar e acompanhar atividades escolares, prazos e status de conclusão.
 
 ## Integrantes
 
@@ -12,7 +12,7 @@ Aplicativo de **Agenda de Estudos** para organização de prazos acadêmicos, al
 
 ## Como rodar o projeto
 
-Projeto criado com [`create-expo-app`](https://www.npmjs.com/package/create-expo-app) (Expo).
+O app foi desenvolvido com React Native e Expo. Os dados das atividades são armazenados localmente com AsyncStorage.
 
 1. Instale as dependências
 
@@ -63,11 +63,3 @@ Projeto criado com [`create-expo-app`](https://www.npmjs.com/package/create-expo
 
 ---
 
-## Documentação do Expo
-
-Para aprender mais sobre desenvolvimento com Expo:
-
-- [Documentação do Expo](https://docs.expo.dev/)
-- [Tutorial do Expo](https://docs.expo.dev/tutorial/introduction/)
-- [Expo no GitHub](https://github.com/expo/expo)
-- [Comunidade no Discord](https://chat.expo.dev)

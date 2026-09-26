@@ -2,15 +2,15 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS_OPCOES } from '../data/status';
@@ -24,7 +24,7 @@ const AddActivityScreen = ({ navigation }) => {
   const [materia, setMateria] = useState('');
   const [prazo, setPrazo] = useState('');
   const [prazoDate, setPrazoDate] = useState(new Date());
-  const [status, setStatus] = useState('Pendente');
+  const [status, setStatus] = useState(STATUS_OPCOES[0]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -36,7 +36,7 @@ const AddActivityScreen = ({ navigation }) => {
       setMateria('');
       setPrazo('');
       setPrazoDate(new Date());
-      setStatus('Pendente');
+      setStatus(STATUS_OPCOES[0]);
       setErrorMessage('');
       setShowPicker(false);
     }, [])

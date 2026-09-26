@@ -24,7 +24,7 @@ const formatarPrazo = (prazo) => {
 const DetailScreen = ({ route, navigation }) => {
   const { id } = route.params || {};
   const [atividade, setAtividade] = useState(null);
-  const [statusAtual, setStatusAtual] = useState('Pendente');
+  const [statusAtual, setStatusAtual] = useState(STATUS_OPCOES[0]);
   const [carregando, setCarregando] = useState(true);
 
   useFocusEffect(
@@ -38,7 +38,7 @@ const DetailScreen = ({ route, navigation }) => {
 
         if (ativo) {
           setAtividade(atividadeAtual);
-          setStatusAtual(atividadeAtual?.status || 'Pendente');
+          setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
           setCarregando(false);
         }
       };
@@ -51,15 +51,17 @@ const DetailScreen = ({ route, navigation }) => {
   );
 
   const handleChangeStatus = async (novoStatus) => {
-    if (novoStatus === statusAtual) return;
+    if (!atividade || novoStatus === statusAtual) return;
+
+    const atividadeId = atividade.id;
 
     const statusAnterior = statusAtual;
     setStatusAtual(novoStatus);
 
     try {
-      const listaAtualizada = await atualizarAtividade(atividade.id, { status: novoStatus });
+      const listaAtualizada = await atualizarAtividade(atividadeId, { status: novoStatus });
       const atividadeAtualizada = listaAtualizada.find(
-        (item) => String(item.id) === String(atividade.id)
+        (item) => String(item.id) === String(atividadeId)
       );
       if (atividadeAtualizada) setAtividade(atividadeAtualizada);
     } catch (error) {
@@ -69,6 +71,10 @@ const DetailScreen = ({ route, navigation }) => {
   };
 
   const handleExcluir = () => {
+    if (!atividade) return;
+
+    const atividadeId = atividade.id;
+
     Alert.alert(
       'Excluir atividade',
       'Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.',
@@ -79,7 +85,7 @@ const DetailScreen = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await excluirAtividade(atividade.id);
+              await excluirAtividade(atividadeId);
               navigation.goBack();
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
@@ -96,14 +102,6 @@ const DetailScreen = ({ route, navigation }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={CORES.primaria} />
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!atividade) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Nenhuma atividade foi selecionada.</Text>
       </SafeAreaView>
     );
   }
