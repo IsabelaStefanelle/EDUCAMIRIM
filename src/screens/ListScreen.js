@@ -1,34 +1,94 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { STATUS_CORES, STATUS_COR_FALLBACK } from '../data/status';
-import { carregarAtividades, excluirAtividade } from '../data/storage';
+import {
+  excluirAtividade,
+  inicializarBanco,
+  listarAtividades,
+  listarAtividadesPorStatus,
+  listarStatus,
+} from '../data/database';
 import { CORES } from '../data/theme';
+
+const carregarListaPorFiltro = (statusId) =>
+  statusId === null ? listarAtividades() : listarAtividadesPorStatus(statusId);
 
 const ListScreen = ({ navigation }) => {
   const [atividades, setAtividades] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [statusDisponiveis, setStatusDisponiveis] = useState([]);
+  const [filtroAtivo, setFiltroAtivo] = useState(null);
+  const statusDisponiveisRef = useRef([]);
+  const filtroAtivoRef = useRef(null);
+  const filtroAnteriorRef = useRef(filtroAtivo);
+  const telaAtivaRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
+      telaAtivaRef.current = true;
       setCarregando(true);
 
-      const buscarAtividades = async () => {
-        const lista = await carregarAtividades();
-        if (ativo) {
-          setAtividades(lista);
-          setCarregando(false);
+      const carregarDadosIniciais = async () => {
+        try {
+          await inicializarBanco();
+
+          if (statusDisponiveisRef.current.length === 0) {
+            const statusCarregados = await listarStatus();
+            if (!ativo) return;
+            statusDisponiveisRef.current = statusCarregados;
+            setStatusDisponiveis(statusCarregados);
+          }
+
+          const lista = await carregarListaPorFiltro(filtroAtivoRef.current);
+          if (ativo) {
+            setAtividades(lista);
+            setCarregando(false);
+          }
+        } catch (error) {
+          if (ativo) {
+            setCarregando(false);
+            Alert.alert('Erro', 'Não foi possível carregar as atividades.');
+          }
         }
       };
 
-      buscarAtividades();
+      carregarDadosIniciais();
       return () => {
         ativo = false;
+        telaAtivaRef.current = false;
       };
     }, [])
   );
+
+  useEffect(() => {
+    filtroAtivoRef.current = filtroAtivo;
+    if (filtroAnteriorRef.current === filtroAtivo) return;
+    filtroAnteriorRef.current = filtroAtivo;
+    if (!telaAtivaRef.current) return;
+
+    let ativo = true;
+    setCarregando(true);
+
+    carregarListaPorFiltro(filtroAtivo)
+      .then((lista) => {
+        if (ativo && telaAtivaRef.current) {
+          setAtividades(lista);
+          setCarregando(false);
+        }
+      })
+      .catch((error) => {
+        if (ativo && telaAtivaRef.current) {
+          setCarregando(false);
+          Alert.alert('Erro', 'Não foi possível filtrar as atividades.');
+        }
+      });
+
+    return () => {
+        ativo = false;
+    };
+  }, [filtroAtivo]);
 
   const handleNavigateToDetail = (atividade) => {
     navigation.navigate('Detalhe', { id: atividade.id });
@@ -49,8 +109,9 @@ const ListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const listaAtualizada = await excluirAtividade(atividade.id);
-              setAtividades(listaAtualizada);
+              await excluirAtividade(atividade.id);
+              const listaAtualizada = await carregarListaPorFiltro(filtroAtivoRef.current);
+              if (telaAtivaRef.current) setAtividades(listaAtualizada);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
             }
@@ -92,10 +153,10 @@ const ListScreen = ({ navigation }) => {
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: STATUS_CORES[item.status] || STATUS_COR_FALLBACK },
+              { backgroundColor: item.status_cor || CORES.statusFallback },
             ]}
           >
-            <Text style={styles.statusText}>{item.status}</Text>
+            <Text style={styles.statusText}>{item.status_nome}</Text>
           </View>
         </View>
 
@@ -120,13 +181,55 @@ const ListScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filtroAtivo === null && [styles.filterButtonSelected, { backgroundColor: CORES.primaria, borderColor: CORES.primaria }],
+          ]}
+          onPress={() => setFiltroAtivo(null)}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.filterButtonText, filtroAtivo === null && styles.filterButtonTextSelected]}>
+            Todos
+          </Text>
+        </TouchableOpacity>
+
+        {statusDisponiveis.map((status) => {
+          const selecionado = filtroAtivo === status.id;
+
+          return (
+            <TouchableOpacity
+              key={status.id}
+              style={[
+                styles.filterButton,
+                selecionado && [
+                  styles.filterButtonSelected,
+                  { backgroundColor: status.cor, borderColor: status.cor },
+                ],
+              ]}
+              onPress={() => setFiltroAtivo(status.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterButtonText, selecionado && styles.filterButtonTextSelected]}>
+                {status.nome}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <FlatList
         data={atividades}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderActivityItem}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhuma atividade cadastrada.</Text>
+            <Text style={styles.emptyText}>
+              {filtroAtivo === null
+                ? 'Nenhuma atividade cadastrada.'
+                : 'Nenhuma atividade com esse status.'}
+            </Text>
           </View>
         }
         contentContainerStyle={styles.listContent}
@@ -159,6 +262,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 100,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  filterButton: {
+    alignItems: 'center',
+    backgroundColor: CORES.cartao,
+    borderColor: CORES.borda,
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginBottom: 8,
+    marginRight: 8,
+    minHeight: 36,
+    paddingHorizontal: 14,
+  },
+  filterButtonSelected: {
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    color: CORES.textoTerciario,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterButtonTextSelected: {
+    color: CORES.textoBranco,
   },
   emptyContainer: {
     paddingVertical: 32,

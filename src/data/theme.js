@@ -11,5 +11,6 @@ export const CORES = {
   bordaSuave: '#EEEEEE',
   bordaNeutra: '#A9A9A9',
   erro: '#D32F2F',
+  statusFallback: '#757575',
   sombra: '#000000',
 };
