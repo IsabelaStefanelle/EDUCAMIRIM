@@ -1,5 +1,21 @@
 # EDUCAMIRIM
 
+<!-- PAM-CI-NOTA-INICIO -->
+### Nota atual (automática) — VIISRE (atividades do Mirim)
+
+[![CI](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-MB-green)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
+
+**MB** — Muito bom · **96%** (53/55 pontos) · atualizado em 2026-10-05 23:23
+
+| Fase | Pontos |
+|------|--------|
+| Fase 1 — Estrutura | 10/10 |
+| Fase 2 — AsyncStorage | 15/15 |
+| Fase 3 — SQLite | 28/30 |
+
+Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
+<!-- PAM-CI-NOTA-FIM -->
+
 **VIISRE** — Trabalho em Grupo de PAM I
 
 Aplicativo móvel de **Agenda de Estudos** para cadastrar e acompanhar atividades escolares, prazos e status de conclusão.
