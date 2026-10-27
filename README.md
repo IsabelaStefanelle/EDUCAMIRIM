@@ -79,6 +79,7 @@ O app foi desenvolvido com React Native e Expo. Os dados das atividades são arm
 
 
 
+
 ---
 
 ## Colaboração por integrante
@@ -89,6 +90,6 @@ O app foi desenvolvido com React Native e Expo. Os dados das atividades são arm
 |---|------------|---------|--------------|
 | 1 | Isabela Stefanelle | 17 | 85.0% █████████████████░░░ |
 | 2 | Rebeka Janson | 2 | 10.0% ██░░░░░░░░░░░░░░░░░░ |
-| 3 | victoriamll | 1 | 5.0% █░░░░░░░░░░░░░░░░░░░ |
+| 3 | Victória Lima | 1 | 5.0% █░░░░░░░░░░░░░░░░░░░ |
 
 **Total de commits considerados:** 20
