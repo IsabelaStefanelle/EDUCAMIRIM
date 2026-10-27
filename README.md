@@ -77,5 +77,18 @@ O app foi desenvolvido com React Native e Expo. Os dados das atividades são arm
 > [!TIP]
 > Material completo do curso: [PAM I](https://etec-bento-quirino.github.io/Programacao-Aplicativos-Moveis-I/)
 
+
+
 ---
 
+## Colaboração por integrante
+
+> *Excluídos: commits do professor Jackson Sá (wendelmax), `github-actions[bot]` e `dependabot[bot]`. Contagem com base em `git log --no-merges`.*
+
+| # | Integrante | Commits | Participação |
+|---|------------|---------|--------------|
+| 1 | Isabela Stefanelle | 17 | 85.0% █████████████████░░░ |
+| 2 | Rebeka Janson | 2 | 10.0% ██░░░░░░░░░░░░░░░░░░ |
+| 3 | victoriamll | 1 | 5.0% █░░░░░░░░░░░░░░░░░░░ |
+
+**Total de commits considerados:** 20
