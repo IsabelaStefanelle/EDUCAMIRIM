@@ -90,7 +90,7 @@ const DetailScreen = ({ route, navigation }) => {
           ? { ...atual, status: statusSelecionado.nome, status_cor: statusSelecionado.cor }
           : atual
       );
-    } catch (error) {
+    } catch {
       setStatusAtual(statusAnterior);
       Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');
     }
@@ -113,7 +113,7 @@ const DetailScreen = ({ route, navigation }) => {
             try {
               await excluirAtividade(atividadeId);
               navigation.goBack();
-            } catch (error) {
+            } catch {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
             }
           },

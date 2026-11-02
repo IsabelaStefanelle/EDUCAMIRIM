@@ -49,7 +49,7 @@ const ListScreen = ({ navigation }) => {
             setAtividades(lista);
             setCarregando(false);
           }
-        } catch (error) {
+        } catch {
           if (ativo) {
             setCarregando(false);
             Alert.alert('Erro', 'Não foi possível carregar as atividades.');
@@ -115,7 +115,7 @@ const ListScreen = ({ navigation }) => {
               await excluirAtividade(atividade.id);
               const listaAtualizada = await carregarListaPorFiltro(filtroAtivoRef.current);
               if (telaAtivaRef.current) setAtividades(listaAtualizada);
-            } catch (error) {
+            } catch {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
             }
           },
