@@ -2,8 +2,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  atualizarStatusAtividade,
+  excluirAtividade,
+  inicializarBanco,
+  listarStatus,
+} from '../data/database';
 import { STATUS_COR_FALLBACK, STATUS_CORES, STATUS_OPCOES } from '../data/status';
-import { atualizarAtividade, carregarAtividades, excluirAtividade } from '../data/storage';
 import { CORES } from '../data/theme';
 
 const formatarPrazo = (prazo) => {
@@ -36,13 +41,26 @@ const DetailScreen = ({ route, navigation }) => {
       setCarregando(true);
 
       const buscarAtividade = async () => {
-        const atividades = await carregarAtividades();
-        const atividadeAtual = atividades.find((item) => String(item.id) === String(id)) || null;
+        try {
+          const banco = await inicializarBanco();
+          const atividadeAtual = await banco.getFirstAsync(
+            `SELECT a.id, a.titulo, a.materia, a.prazo, s.nome AS status, s.cor AS status_cor
+             FROM atividades a
+             LEFT JOIN status s ON s.id = a.status_id
+             WHERE a.id = ?`,
+            [id]
+          );
 
-        if (ativo) {
-          setAtividade(atividadeAtual);
-          setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
-          setCarregando(false);
+          if (ativo) {
+            setAtividade(atividadeAtual);
+            setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
+            setCarregando(false);
+          }
+        } catch {
+          if (ativo) {
+            setCarregando(false);
+            Alert.alert('Erro', 'Não foi possível carregar a atividade.');
+          }
         }
       };
 
@@ -62,11 +80,16 @@ const DetailScreen = ({ route, navigation }) => {
     setStatusAtual(novoStatus);
 
     try {
-      const listaAtualizada = await atualizarAtividade(atividadeId, { status: novoStatus });
-      const atividadeAtualizada = listaAtualizada.find(
-        (item) => String(item.id) === String(atividadeId)
+      const statusDisponiveis = await listarStatus();
+      const statusSelecionado = statusDisponiveis.find((item) => item.nome === novoStatus);
+      if (!statusSelecionado) throw new Error('Status não encontrado.');
+
+      await atualizarStatusAtividade(atividadeId, statusSelecionado.id);
+      setAtividade((atual) =>
+        atual
+          ? { ...atual, status: statusSelecionado.nome, status_cor: statusSelecionado.cor }
+          : atual
       );
-      if (atividadeAtualizada) setAtividade(atividadeAtualizada);
     } catch (error) {
       setStatusAtual(statusAnterior);
       Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');

@@ -14,8 +14,8 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { inicializarBanco } from '../data/database';
 import { STATUS_OPCOES } from '../data/status';
-import { adicionarAtividade } from '../data/storage';
 import { CORES } from '../data/theme';
 
 const isWeb = Platform.OS === 'web';
@@ -140,9 +140,9 @@ const AddActivityScreen = ({ navigation }) => {
   const handleSave = async () => {
     if (salvando || salvandoRef.current) return;
 
-    const tituloValidado = titulo.trim();
+    const tituloLimpo = titulo.trim();
 
-    if (!tituloValidado) {
+    if (tituloLimpo.length === 0 || !tituloLimpo) {
       setErrorMessage('O campo Título é obrigatório.');
       return;
     }
@@ -152,8 +152,7 @@ const AddActivityScreen = ({ navigation }) => {
     const prazoFinal = prazo ? parseDataPorTexto(prazo) : null;
 
     const novaAtividade = {
-      id: Date.now(),
-      titulo: tituloValidado,
+      titulo: tituloLimpo,
       materia: materia.trim(),
       prazo: prazoFinal ? dateParaISO(prazoFinal) : null,
       status,
@@ -162,7 +161,22 @@ const AddActivityScreen = ({ navigation }) => {
     salvandoRef.current = true;
     setSalvando(true);
     try {
-      await adicionarAtividade(novaAtividade);
+      const banco = await inicializarBanco();
+      const statusBanco = await banco.getFirstAsync(
+        'SELECT id FROM status WHERE nome = ?',
+        [status]
+      );
+      await banco.runAsync(
+        `INSERT INTO atividades (titulo, materia, prazo, status_id, criado_em)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          novaAtividade.titulo,
+          novaAtividade.materia || null,
+          novaAtividade.prazo,
+          statusBanco?.id ?? null,
+          new Date().toISOString(),
+        ]
+      );
 
       Alert.alert(
         'Sucesso',
