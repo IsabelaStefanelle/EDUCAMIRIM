@@ -5,13 +5,13 @@
 
 [![CI](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-MB-green)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
 
-**MB** — Muito bom · **96%** (53/55 pontos) · atualizado em 2026-10-27 00:22
+**MB** — Muito bom · **100%** (55/55 pontos) · atualizado em 2026-11-02 21:21
 
 | Fase | Pontos |
 |------|--------|
 | Fase 1 — Estrutura | 10/10 |
 | Fase 2 — AsyncStorage | 15/15 |
-| Fase 3 — SQLite | 28/30 |
+| Fase 3 — SQLite | 30/30 |
 
 Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
 <!-- PAM-CI-NOTA-FIM -->
