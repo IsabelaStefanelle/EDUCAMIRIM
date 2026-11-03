@@ -213,6 +213,9 @@ export async function criarStatus(nome, cor) {
     const banco = await inicializarBanco();
     const nomeNormalizado = typeof nome === 'string' ? nome.trim() : '';
     if (!nomeNormalizado) throw new Error('O nome do status é obrigatório.');
+    if (typeof cor !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(cor)) {
+      throw new Error('A cor deve estar no formato hexadecimal #RRGGBB.');
+    }
 
     const existente = await banco.getFirstAsync(
       'SELECT id FROM status WHERE nome = ?',

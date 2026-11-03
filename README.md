@@ -20,6 +20,8 @@ Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Act
 
 Aplicativo móvel de **Agenda de Estudos** para cadastrar e acompanhar atividades escolares, prazos e status de conclusão.
 
+Consulte a [documentação técnica e funcional](DOCUMENTACAO_TECNICA.md) para ver o escopo implementado e o roadmap do EducaMirim.
+
 ## Integrantes
 
 - Isabela Stefanelle Paulino dos Santos
@@ -28,7 +30,7 @@ Aplicativo móvel de **Agenda de Estudos** para cadastrar e acompanhar atividade
 
 ## Como rodar o projeto
 
-O app foi desenvolvido com React Native e Expo. Os dados das atividades são armazenados localmente com AsyncStorage.
+O app foi desenvolvido com React Native e Expo. A lista, o cadastro e os detalhes usam SQLite local. Login, mural de avisos, grade semanal e trabalhos em grupo são mockups com dados de demonstração; o botão do Google Agenda apenas apresenta uma prévia, sem sincronização real. `src/data/storage.js` permanece como implementação da Fase 2 com AsyncStorage; o fluxo atual de atividades usa SQLite.
 
 1. Instale as dependências
 

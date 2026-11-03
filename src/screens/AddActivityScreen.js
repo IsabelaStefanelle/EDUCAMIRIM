@@ -14,7 +14,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { inicializarBanco } from '../data/database';
+import { inicializarBanco, listarStatus } from '../data/database';
 import { STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
 
@@ -29,6 +29,7 @@ const AddActivityScreen = ({ navigation }) => {
   const [prazo, setPrazo] = useState('');
   const [prazoDate, setPrazoDate] = useState(new Date());
   const [status, setStatus] = useState(STATUS_OPCOES[0]);
+  const [statusDisponiveis, setStatusDisponiveis] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -36,6 +37,7 @@ const AddActivityScreen = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
+      let ativo = true;
       setTitulo('');
       setMateria('');
       setPrazo('');
@@ -43,6 +45,20 @@ const AddActivityScreen = ({ navigation }) => {
       setStatus(STATUS_OPCOES[0]);
       setErrorMessage('');
       setShowPicker(false);
+
+      listarStatus()
+        .then((itens) => {
+          if (!ativo) return;
+          setStatusDisponiveis(itens);
+          setStatus(itens[0]?.nome || STATUS_OPCOES[0]);
+        })
+        .catch(() => {
+          if (ativo) Alert.alert('Erro', 'Não foi possível carregar os status.');
+        });
+
+      return () => {
+        ativo = false;
+      };
     }, [])
   );
 
@@ -278,18 +294,18 @@ const AddActivityScreen = ({ navigation }) => {
 
         <Text style={styles.label}>Status</Text>
         <View style={styles.statusRow}>
-          {STATUS_OPCOES.map((option) => {
-            const isSelected = option === status;
+          {statusDisponiveis.map((option) => {
+            const isSelected = option.nome === status;
 
             return (
               <TouchableOpacity
-                key={option}
+                key={option.id}
                 style={[styles.statusButton, isSelected && styles.selectedStatus]}
-                onPress={() => setStatus(option)}
+                onPress={() => setStatus(option.nome)}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.statusButtonText, isSelected && styles.selectedStatusText]}>
-                  {option}
+                  {option.nome}
                 </Text>
               </TouchableOpacity>
             );

@@ -14,6 +14,12 @@ import { CORES } from '../data/theme';
 const carregarListaPorFiltro = (statusId) =>
   statusId === null ? listarAtividades() : listarAtividadesPorStatus(statusId);
 
+const contarAtividadesConcluidas = async (statusList) => {
+  const statusConcluido = statusList.find((status) => status.nome === 'Concluído');
+  if (!statusConcluido) return 0;
+  return (await listarAtividadesPorStatus(statusConcluido.id)).length;
+};
+
 const ListScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 720);
@@ -21,8 +27,8 @@ const ListScreen = ({ navigation }) => {
   const [atividades, setAtividades] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [statusDisponiveis, setStatusDisponiveis] = useState([]);
+  const [tarefasConcluidas, setTarefasConcluidas] = useState(0);
   const [filtroAtivo, setFiltroAtivo] = useState(null);
-  const statusDisponiveisRef = useRef([]);
   const filtroAtivoRef = useRef(null);
   const filtroAnteriorRef = useRef(filtroAtivo);
   const telaAtivaRef = useRef(false);
@@ -37,14 +43,22 @@ const ListScreen = ({ navigation }) => {
         try {
           await inicializarBanco();
 
-          if (statusDisponiveisRef.current.length === 0) {
-            const statusCarregados = await listarStatus();
-            if (!ativo) return;
-            statusDisponiveisRef.current = statusCarregados;
-            setStatusDisponiveis(statusCarregados);
+          const statusCarregados = await listarStatus();
+          if (!ativo) return;
+          setStatusDisponiveis(statusCarregados);
+          const totalConcluidas = await contarAtividadesConcluidas(statusCarregados);
+          if (!ativo) return;
+          setTarefasConcluidas(totalConcluidas);
+
+          let filtroId = filtroAtivoRef.current;
+          if (filtroId !== null && !statusCarregados.some((status) => status.id === filtroId)) {
+            filtroId = null;
+            filtroAtivoRef.current = null;
+            filtroAnteriorRef.current = null;
+            setFiltroAtivo(null);
           }
 
-          const lista = await carregarListaPorFiltro(filtroAtivoRef.current);
+          const lista = await carregarListaPorFiltro(filtroId);
           if (ativo) {
             setAtividades(lista);
             setCarregando(false);
@@ -113,8 +127,15 @@ const ListScreen = ({ navigation }) => {
           onPress: async () => {
             try {
               await excluirAtividade(atividade.id);
-              const listaAtualizada = await carregarListaPorFiltro(filtroAtivoRef.current);
-              if (telaAtivaRef.current) setAtividades(listaAtualizada);
+              const statusAtualizados = await listarStatus();
+              const [listaAtualizada, totalConcluidas] = await Promise.all([
+                carregarListaPorFiltro(filtroAtivoRef.current),
+                contarAtividadesConcluidas(statusAtualizados),
+              ]);
+              if (telaAtivaRef.current) {
+                setAtividades(listaAtualizada);
+                setTarefasConcluidas(totalConcluidas);
+              }
             } catch {
               Alert.alert('Erro', 'Não foi possível excluir a atividade.');
             }
@@ -124,21 +145,19 @@ const ListScreen = ({ navigation }) => {
     );
   };
 
-  const meses = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-  ];
-
   const formatarDataParaExibir = (data) => {
     if (!data) return 'Sem prazo';
 
-  const dataObj = new Date(data);
+    const dataObj = new Date(data);
     if (Number.isNaN(dataObj.getTime())) return data;
 
-  const dia = dataObj.getDate();
-  const mes = meses[dataObj.getMonth()];
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const ano = dataObj.getFullYear();
+    const hora = String(dataObj.getHours()).padStart(2, '0');
+    const minuto = String(dataObj.getMinutes()).padStart(2, '0');
 
-  return `Até ${dia} de ${mes}`;
+    return `Até ${dia}/${mes}/${ano} às ${hora}:${minuto}`;
   };
   
   const renderActivityItem = ({ item }) => (
@@ -222,13 +241,38 @@ const ListScreen = ({ navigation }) => {
         })}
       </View>
 
-      <TouchableOpacity
-        style={[styles.addButton, { width: contentWidth - horizontalPadding * 2 }]}
-        onPress={handleAddActivity}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.addButtonText}>+ Adicionar Atividade</Text>
-      </TouchableOpacity>
+      <View style={[styles.featureLinks, { width: contentWidth - horizontalPadding * 2 }]}>
+        <TouchableOpacity
+          style={styles.featureLink}
+          onPress={() => navigation.navigate('Avisos')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.featureLinkText}>Avisos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.featureLink}
+          onPress={() => navigation.navigate('Grade')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.featureLinkText}>Grade</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.featureLink}
+          onPress={() => navigation.navigate('Projetos')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.featureLinkText}>Projetos</Text>
+        </TouchableOpacity>
+      </View>
+
+      {(atividades.length > 0 || tarefasConcluidas > 0) && (
+        <View style={[styles.gamificationBanner, { width: contentWidth - horizontalPadding * 2 }]}>
+          <Text style={styles.gamificationTitle}>
+            Você concluiu {tarefasConcluidas} tarefa{tarefasConcluidas === 1 ? '' : 's'}!
+          </Text>
+          <Text style={styles.gamificationSubtitle}>Contador baseado nas atividades salvas no app.</Text>
+        </View>
+      )}
 
       <FlatList
         data={atividades}
@@ -243,9 +287,18 @@ const ListScreen = ({ navigation }) => {
             </Text>
           </View>
         }
-        contentContainerStyle={[styles.listContent, { width: contentWidth, paddingHorizontal: horizontalPadding }]}
+        contentContainerStyle={[styles.listContent, { width: contentWidth, paddingHorizontal: horizontalPadding, paddingBottom: 96 }]}
         scrollEnabled={true}
       />
+      <TouchableOpacity
+        style={[styles.addButton, { right: (width - contentWidth) / 2 + horizontalPadding }]}
+        onPress={handleAddActivity}
+        accessibilityRole="button"
+        accessibilityLabel="Adicionar atividade"
+        activeOpacity={0.8}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -354,22 +407,69 @@ const styles = StyleSheet.create({
     color: CORES.textoSuave,
   },
   addButton: {
-    alignSelf: 'center',
-    backgroundColor: CORES.primaria,
-    marginTop: 4,
-    paddingVertical: 14,
-    borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: CORES.primaria,
+    borderRadius: 30,
+    bottom: 24,
     elevation: 5,
+    height: 60,
+    justifyContent: 'center',
+    position: 'absolute',
     shadowColor: CORES.sombra,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    width: 60,
   },
   addButtonText: {
     color: CORES.textoBranco,
+    fontSize: 34,
+    fontWeight: '400',
+    lineHeight: 38,
+  },
+  featureLinks: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  featureLink: {
+    alignItems: 'center',
+    backgroundColor: CORES.cartao,
+    borderColor: CORES.borda,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    minWidth: 88,
+    paddingHorizontal: 8,
+  },
+  featureLinkText: {
+    color: CORES.primaria,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  gamificationBanner: {
+    alignSelf: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    marginTop: 12,
+    padding: 16,
+  },
+  gamificationTitle: {
+    color: '#E65100',
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  gamificationSubtitle: {
+    color: '#9A4D00',
+    fontSize: 13,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 

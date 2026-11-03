@@ -3,12 +3,12 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  atualizarStatusAtividade,
-  excluirAtividade,
-  inicializarBanco,
-  listarStatus,
+    atualizarStatusAtividade,
+    excluirAtividade,
+    inicializarBanco,
+    listarStatus,
 } from '../data/database';
-import { STATUS_COR_FALLBACK, STATUS_CORES, STATUS_OPCOES } from '../data/status';
+import { STATUS_COR_FALLBACK, STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
 
 const formatarPrazo = (prazo) => {
@@ -33,6 +33,7 @@ const DetailScreen = ({ route, navigation }) => {
   const { id } = route.params || {};
   const [atividade, setAtividade] = useState(null);
   const [statusAtual, setStatusAtual] = useState(STATUS_OPCOES[0]);
+  const [statusDisponiveis, setStatusDisponiveis] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   useFocusEffect(
@@ -43,6 +44,7 @@ const DetailScreen = ({ route, navigation }) => {
       const buscarAtividade = async () => {
         try {
           const banco = await inicializarBanco();
+          const statusCarregados = await listarStatus();
           const atividadeAtual = await banco.getFirstAsync(
             `SELECT a.id, a.titulo, a.materia, a.prazo, s.nome AS status, s.cor AS status_cor
              FROM atividades a
@@ -52,6 +54,7 @@ const DetailScreen = ({ route, navigation }) => {
           );
 
           if (ativo) {
+            setStatusDisponiveis(statusCarregados);
             setAtividade(atividadeAtual);
             setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
             setCarregando(false);
@@ -94,6 +97,15 @@ const DetailScreen = ({ route, navigation }) => {
       setStatusAtual(statusAnterior);
       Alert.alert('Erro', 'Não foi possível atualizar o status da atividade.');
     }
+  };
+
+  const handleSincronizarAgenda = () => {
+    const prazo = atividade.prazo ? formatarPrazo(atividade.prazo) : 'não informado';
+    Alert.alert(
+      'Prévia do Google Agenda',
+      `Esta é apenas uma demonstração. O prazo ${prazo} não foi sincronizado com uma conta Google.`,
+      [{ text: 'OK' }]
+    );
   };
 
   const handleExcluir = () => {
@@ -158,27 +170,27 @@ const DetailScreen = ({ route, navigation }) => {
         <Text style={styles.value}>{formatarPrazo(atividade.prazo)}</Text>
 
         <Text style={styles.label}>Status atual:</Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_CORES[statusAtual] || STATUS_COR_FALLBACK }]}>
+        <View style={[styles.statusBadge, { backgroundColor: atividade.status_cor || STATUS_COR_FALLBACK }]}>
           <Text style={styles.statusBadgeText}>{statusAtual}</Text>
         </View>
       </View>
 
       <Text style={styles.sectionLabel}>Alterar status para:</Text>
       <View style={styles.statusRow}>
-        {STATUS_OPCOES.map((option) => {
-          const isSelected = option === statusAtual;
+        {statusDisponiveis.map((option) => {
+          const isSelected = option.nome === statusAtual;
 
           return (
             <TouchableOpacity
-              key={option}
+              key={option.id}
               style={[
                 styles.statusOption,
                 isSelected && {
-                  backgroundColor: STATUS_CORES[option] || STATUS_COR_FALLBACK,
-                  borderColor: STATUS_CORES[option] || STATUS_COR_FALLBACK,
+                  backgroundColor: option.cor || STATUS_COR_FALLBACK,
+                  borderColor: option.cor || STATUS_COR_FALLBACK,
                 },
               ]}
-              onPress={() => handleChangeStatus(option)}
+              onPress={() => handleChangeStatus(option.nome)}
               activeOpacity={0.8}
             >
               <Text
@@ -187,12 +199,22 @@ const DetailScreen = ({ route, navigation }) => {
                   isSelected && styles.statusOptionTextSelected,
                 ]}
               >
-                {option}
+                {option.nome}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
+
+      <TouchableOpacity
+        style={styles.calendarPreviewButton}
+        onPress={handleSincronizarAgenda}
+        accessibilityRole="button"
+        accessibilityLabel="Prévia de sincronização com Google Agenda"
+        activeOpacity={0.8}
+      >
+        <Text style={styles.calendarPreviewButtonText}>Prévia: Google Agenda</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.deleteButton}
@@ -273,6 +295,22 @@ const styles = StyleSheet.create({
     color: CORES.texto,
     marginTop: 24,
     marginBottom: 8,
+  },
+  calendarPreviewButton: {
+    alignItems: 'center',
+    backgroundColor: '#E8F0FE',
+    borderColor: '#4285F4',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginBottom: 16,
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  calendarPreviewButtonText: {
+    color: '#1A5DBB',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   statusRow: {
     flexDirection: 'row',
