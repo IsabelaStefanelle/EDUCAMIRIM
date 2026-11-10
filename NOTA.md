@@ -6,7 +6,7 @@
 
 ![](https://img.shields.io/static/v1?label=Nota%20PAM%20I&message=MB&color=green)
 
-**Nota atual: MB** · 94% (94/100 pontos) · rodada de 2026-11-10 02:26:29 · commit `4988e03`
+**Nota atual: MB** · 100% (100/100 pontos) · rodada de 2026-11-10 03:42:22 · commit `dd1a234`
 
 Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–75%) · MB = Muito bom (75–100%)
 
@@ -15,17 +15,17 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 | Fase 1 — Estrutura | 1x (10 pts) | 10/10 | completa |
 | Fase 2 — AsyncStorage | 1x (15 pts) | 15/15 | completa |
 | Fase 3 — SQLite | 2x (30 pts) | 30/30 | completa |
-| Fase 4 — Versão Final (SQLite + UX + Dispositivo) | 3x (45 pts) | 39/45 | em desenvolvimento |
+| Fase 4 — Versão Final (SQLite + UX + Dispositivo) | 3x (45 pts) | 45/45 | completa |
 
 ## Resumo dos Testes Funcionais (Execução Real em Runtime Node + SQLite)
 
 | Teste Funcional SQLite (Fase 4) | Resultado | Detalhes da Execução |
 |---|---|---|
-| Schema / Inicialização (`CREATE TABLE`) | PASSOU | Tabelas criadas no SQLite: `status, atividades` |
+| Schema / Inicialização (`CREATE TABLE`) | PASSOU | Tabelas criadas no SQLite: `status, atividades, lembretes` |
 | Adicionar (`INSERT INTO`) | PASSOU | Inserção SQLite verificada em memória (`inserts=5` em `atividades`) |
-| Listar + Filtrar (`SELECT` + `WHERE`) | PASSOU | Leitura e filtro SQLite verificados (`selects=5, where=6`) |
+| Listar + Filtrar (`SELECT` + `WHERE`) | PASSOU | Leitura e filtro SQLite verificados (`selects=5, where=7`) |
 | Editar (`UPDATE`) | PASSOU | Atualização SQLite verificada (`updates=2` em `atividades`) |
-| Excluir (`DELETE FROM`) | PASSOU | Exclusão SQLite confirmada (`deletes=2` em `atividades`) |
+| Excluir (`DELETE FROM`) | PASSOU | Exclusão SQLite confirmada (`deletes=3` em `atividades`) |
 
 ## Checklist validado
 
@@ -56,7 +56,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+1 pts)** Formulário salva chamando adicionar/salvar — `src/screens/AddActivityScreen.js`
 - [x] **(+1 pts)** Lista é alimentada a partir do storage/banco — `src/screens/ListScreen.js`
 - [x] **(+1 pts)** Tela de detalhe usa busca/dados do storage/banco — `src/screens/DetailScreen.js`
-- [x] **(+1 pts)** Exclusão usa confirmação (Alert.alert) — `src/screens/DetailScreen.js`
+- [x] **(+1 pts)** Exclusão usa confirmação (Alert.alert) — `src/screens/AddActivityScreen.js`
 - [x] **(+1 pts)** Dados iniciais/seed são gravados na 1ª execução — `src/data/storage.js`
 - [x] **(+1 pts)** Formulário valida campos (trim/length/vazio) — `src/screens/AddActivityScreen.js`
 
@@ -78,17 +78,17 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+2 pts)** Usa async/await corretamente (mais de 2 await) — `src/data/database.js`
 - [x] **(+2 pts)** Banco possui dados iniciais (seed inserido em SQL) — `src/data/database.js`
 
-### Fase 4 — Versão Final: SQLite Exclusivo, UX, Dispositivo e Entrega (39/45 pts · peso 3x)
+### Fase 4 — Versão Final: SQLite Exclusivo, UX, Dispositivo e Entrega (45/45 pts · peso 3x)
 
 - [x] **(+3 pts)** SQLite exclusivo: fluxo das telas usa SQLite sem depender de AsyncStorage p/ dados críticos — `src/data/database.js (telas sem AsyncStorage crítico)`
-- [x] **(+3 pts)** [Teste Funcional SQLite] Banco abre e cria a(s) tabela(s) em memória (CREATE TABLE) — `Tabela(s) criada(s) no motor SQLite: status, atividades`
+- [x] **(+3 pts)** [Teste Funcional SQLite] Banco abre e cria a(s) tabela(s) em memória (CREATE TABLE) — `Tabela(s) criada(s) no motor SQLite: status, atividades, lembretes`
 - [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de ADICIONAR insere registro real no banco (INSERT INTO) — `INSERT executado com sucesso no SQLite (5 inserção/ões em atividades)`
-- [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de LISTAR e FILTRAR retorna dados reais (SELECT + WHERE) — `SELECT (5x) + WHERE (6x) validados em atividades`
+- [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de LISTAR e FILTRAR retorna dados reais (SELECT + WHERE) — `SELECT (5x) + WHERE (7x) validados em atividades`
 - [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de EDITAR atualiza registro existente no banco (UPDATE) — `UPDATE executado e verificado no SQLite (2x em atividades)`
-- [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de EXCLUIR remove registro do banco (DELETE FROM) — `DELETE executado e confirmado no SQLite (2x em atividades)`
-- [ ] **(+3 pts)** Recurso do dispositivo: pacote nativo no package.json (notifications, image-picker, location) ou justificativa — `FALTA instalar expo-notifications / expo-image-picker / expo-location (ou justificar no README)`
-- [ ] **(+3 pts)** Recurso do dispositivo: uso da API nativa no código (notificação, foto ou GPS) ou justificativa — `FALTA integrar recurso do aparelho no código (Aulas 08, 09 ou 10)`
-- [x] **(+3 pts)** UX: Loading ao carregar a lista do SQLite (ActivityIndicator + estado loading/carregando) — `src/screens/DetailScreen.js (src/screens/DetailScreen.js)`
+- [x] **(+3 pts)** [Teste Funcional SQLite] Fluxo de EXCLUIR remove registro do banco (DELETE FROM) — `DELETE executado e confirmado no SQLite (3x em atividades)`
+- [x] **(+3 pts)** Recurso do dispositivo: pacote nativo no package.json (notifications, image-picker, location) ou justificativa — `expo-notifications`
+- [x] **(+3 pts)** Recurso do dispositivo: uso da API nativa no código (notificação, foto ou GPS) ou justificativa — `src/data/notifications.js`
+- [x] **(+3 pts)** UX: Loading ao carregar a lista do SQLite (ActivityIndicator + estado loading/carregando) — `src/screens/DetailScreen.js (src/screens/AddActivityScreen.js)`
 - [x] **(+3 pts)** UX: Empty State quando não houver registros (mensagem amigável + ícone/emoji/ilustração) — `src/screens/ListScreen.js`
 - [x] **(+3 pts)** UX: Mensagem de erro amigável se falhar ao CARREGAR dados (try/catch com feedback) — `src/data/database.js`
 - [x] **(+3 pts)** UX: Mensagem de erro amigável e validação se falhar ao SALVAR/EXCLUIR (try/catch + Alert/.trim) — `src/data/database.js + validação .trim()`
