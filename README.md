@@ -3,9 +3,9 @@
 <!-- PAM-CI-NOTA-INICIO -->
 ### Nota atual (automática) — VIISRE (atividades do Mirim)
 
-[![CI](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-MB-green)](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml)
+[![CI](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml/badge.svg)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml) [![Nota](https://img.shields.io/badge/Nota%20PAM%20I-MB-green)](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
 
-**MB** — Muito bom · **94%** (94/100 pontos) · atualizado em 2026-11-10 01:28
+**MB** — Muito bom · **94%** (94/100 pontos) · atualizado em 2026-11-10 02:26
 
 | Fase | Pontos |
 |------|--------|
@@ -14,7 +14,7 @@
 | Fase 3 — SQLite | 30/30 |
 | Fase 4 — Versão Final (UX e Dispositivo) | 39/45 |
 
-Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/ORG/REPO/actions/workflows/pam-ci.yml)
+Checklist item a item em [NOTA.md](NOTA.md) · [ver a rodada mais recente no Actions](https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml)
 <!-- PAM-CI-NOTA-FIM -->
 
 **VIISRE** — Trabalho em Grupo de PAM I

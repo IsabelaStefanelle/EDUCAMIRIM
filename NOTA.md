@@ -1,12 +1,12 @@
 > Este arquivo e **gerado automaticamente** pelo CI a cada push na branch `main`.
 > Nao edite a mao: o proximo commit do CI sobrescreve. Para ver a rodada no Actions:
-> https://github.com/ORG/REPO/actions/workflows/pam-ci.yml
+> https://github.com/IsabelaStefanelle/EDUCAMIRIM/actions/workflows/pam-ci.yml
 
 ## Nota PAM I — VIISRE (atividades do Mirim)
 
 ![](https://img.shields.io/static/v1?label=Nota%20PAM%20I&message=MB&color=green)
 
-**Nota atual: MB** · 94% (94/100 pontos) · rodada de 2026-11-10 01:28:10 · commit `local`
+**Nota atual: MB** · 94% (94/100 pontos) · rodada de 2026-11-10 02:26:29 · commit `4988e03`
 
 Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–75%) · MB = Muito bom (75–100%)
 
@@ -94,7 +94,7 @@ Legenda: I = Insuficiente (0–25%) · R = Regular (25–50%) · B = Bom (50–7
 - [x] **(+3 pts)** UX: Mensagem de erro amigável e validação se falhar ao SALVAR/EXCLUIR (try/catch + Alert/.trim) — `src/data/database.js + validação .trim()`
 - [x] **(+3 pts)** Organização do código: separação em pastas por responsabilidade (screens/app, database/data, components) — `pastas: data, screens`
 - [x] **(+3 pts)** Interface consistente: FlatList (keyExtractor + renderItem) e estilização StyleSheet.create — `src/screens/ListScreen.js (7 arquivos com StyleSheet)`
-- [x] **(+3 pts)** Entrega: repositório limpo (.gitignore sem node_modules) e README com instruções/Expo Go/APK — `README.md (66 linhas) + .gitignore`
+- [x] **(+3 pts)** Entrega: repositório limpo (.gitignore sem node_modules) e README com instruções/Expo Go/APK — `README.md (67 linhas) + .gitignore`
 
 ## Para evoluir a nota
 
