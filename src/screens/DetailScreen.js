@@ -1,13 +1,17 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     atualizarStatusAtividade,
+    buscarLembreteAtividade,
     excluirAtividade,
+    excluirLembreteAtividade,
     inicializarBanco,
     listarStatus,
+    salvarLembreteAtividade,
 } from '../data/database';
+import { agendarLembreteDePrazo, cancelarNotificacaoLocal } from '../data/notifications';
 import { STATUS_COR_FALLBACK, STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
 
@@ -35,6 +39,8 @@ const DetailScreen = ({ route, navigation }) => {
   const [statusAtual, setStatusAtual] = useState(STATUS_OPCOES[0]);
   const [statusDisponiveis, setStatusDisponiveis] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [lembreteId, setLembreteId] = useState(null);
+  const [configurandoLembrete, setConfigurandoLembrete] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,19 +50,23 @@ const DetailScreen = ({ route, navigation }) => {
       const buscarAtividade = async () => {
         try {
           const banco = await inicializarBanco();
-          const statusCarregados = await listarStatus();
-          const atividadeAtual = await banco.getFirstAsync(
-            `SELECT a.id, a.titulo, a.materia, a.prazo, s.nome AS status, s.cor AS status_cor
+          const [statusCarregados, atividadeAtual, lembrete] = await Promise.all([
+            listarStatus(),
+            banco.getFirstAsync(
+              `SELECT a.id, a.titulo, a.materia, a.prazo, s.nome AS status, s.cor AS status_cor
              FROM atividades a
              LEFT JOIN status s ON s.id = a.status_id
              WHERE a.id = ?`,
-            [id]
-          );
+              [id]
+            ),
+            buscarLembreteAtividade(id),
+          ]);
 
           if (ativo) {
             setStatusDisponiveis(statusCarregados);
             setAtividade(atividadeAtual);
             setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
+            setLembreteId(lembrete?.notificacao_id || null);
             setCarregando(false);
           }
         } catch {
@@ -108,6 +118,43 @@ const DetailScreen = ({ route, navigation }) => {
     );
   };
 
+  const handleToggleLembrete = async () => {
+    if (!atividade || configurandoLembrete) return;
+    setConfigurandoLembrete(true);
+
+    try {
+      if (lembreteId) {
+        await cancelarNotificacaoLocal(lembreteId);
+        await excluirLembreteAtividade(atividade.id);
+        setLembreteId(null);
+        Alert.alert('Lembrete cancelado', 'O aviso de prazo foi removido deste aparelho.');
+        return;
+      }
+
+      if (!atividade.prazo) {
+        Alert.alert('Prazo necessário', 'Adicione um prazo à atividade antes de configurar o lembrete.');
+        return;
+      }
+
+      const notificacaoId = await agendarLembreteDePrazo(atividade.titulo, atividade.prazo);
+      try {
+        await salvarLembreteAtividade(atividade.id, notificacaoId);
+      } catch (error) {
+        await cancelarNotificacaoLocal(notificacaoId);
+        throw error;
+      }
+      setLembreteId(notificacaoId);
+      Alert.alert('Lembrete configurado', 'Você receberá um aviso uma hora antes do prazo.');
+    } catch (error) {
+      Alert.alert(
+        'Não foi possível configurar o lembrete',
+        error.message || 'Verifique as permissões de notificação do aparelho e tente novamente.'
+      );
+    } finally {
+      setConfigurandoLembrete(false);
+    }
+  };
+
   const handleExcluir = () => {
     if (!atividade) return;
 
@@ -123,6 +170,7 @@ const DetailScreen = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (lembreteId) await cancelarNotificacaoLocal(lembreteId);
               await excluirAtividade(atividadeId);
               navigation.goBack();
             } catch {
@@ -205,6 +253,31 @@ const DetailScreen = ({ route, navigation }) => {
           );
         })}
       </View>
+
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => navigation.navigate('Adicionar', { id: atividade.id })}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.editButtonText}>Editar atividade</Text>
+      </TouchableOpacity>
+
+      {Platform.OS !== 'web' && (
+        <TouchableOpacity
+          style={[styles.reminderButton, lembreteId && styles.reminderButtonActive]}
+          onPress={handleToggleLembrete}
+          disabled={configurandoLembrete}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.reminderButtonText}>
+            {configurandoLembrete
+              ? 'Configurando...'
+              : lembreteId
+                ? 'Cancelar lembrete'
+                : 'Avisar 1 hora antes'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity
         style={styles.calendarPreviewButton}
@@ -306,6 +379,40 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 48,
     paddingHorizontal: 12,
+  },
+  editButton: {
+    alignItems: 'center',
+    backgroundColor: CORES.primaria,
+    borderRadius: 8,
+    justifyContent: 'center',
+    marginBottom: 16,
+    minHeight: 48,
+  },
+  editButtonText: {
+    color: CORES.textoBranco,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  reminderButton: {
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderColor: '#2E7D32',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginBottom: 16,
+    minHeight: 48,
+  },
+  reminderButtonActive: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#A65B00',
+  },
+  reminderButtonText: {
+    color: CORES.texto,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: 10,
   },
   calendarPreviewButtonText: {
     color: '#1A5DBB',

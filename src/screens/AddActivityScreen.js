@@ -14,13 +14,32 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { inicializarBanco, listarStatus } from '../data/database';
+import {
+    atualizarAtividade,
+    buscarAtividadePorId,
+    buscarLembreteAtividade,
+    excluirLembreteAtividade,
+    inicializarBanco,
+    listarStatus,
+} from '../data/database';
+import { cancelarNotificacaoLocal } from '../data/notifications';
 import { STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
 
 const isWeb = Platform.OS === 'web';
 
-const AddActivityScreen = ({ navigation }) => {
+const formatarDataParaExibir = (dataObj) => {
+  const dia = String(dataObj.getDate()).padStart(2, '0');
+  const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+  const ano = dataObj.getFullYear();
+  const hora = String(dataObj.getHours()).padStart(2, '0');
+  const minuto = String(dataObj.getMinutes()).padStart(2, '0');
+  return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
+};
+
+const AddActivityScreen = ({ navigation, route }) => {
+  const atividadeId = route.params?.id ?? null;
+  const editando = atividadeId !== null;
   const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 640);
   const horizontalPadding = Math.min(24, Math.max(12, width * 0.05));
@@ -33,6 +52,7 @@ const AddActivityScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [carregandoAtividade, setCarregandoAtividade] = useState(editando);
   const salvandoRef = useRef(false);
 
   useFocusEffect(
@@ -45,34 +65,54 @@ const AddActivityScreen = ({ navigation }) => {
       setStatus(STATUS_OPCOES[0]);
       setErrorMessage('');
       setShowPicker(false);
+      setCarregandoAtividade(editando);
 
-      listarStatus()
-        .then((itens) => {
+      Promise.all([
+        listarStatus(),
+        editando ? buscarAtividadePorId(atividadeId) : Promise.resolve(null),
+      ])
+        .then(([itens, atividade]) => {
           if (!ativo) return;
           setStatusDisponiveis(itens);
-          setStatus(itens[0]?.nome || STATUS_OPCOES[0]);
+          if (editando && !atividade) {
+            setCarregandoAtividade(false);
+            Alert.alert('Atividade não encontrada', 'Ela pode ter sido excluída por outra tela.');
+            navigation.goBack();
+            return;
+          }
+
+          if (atividade) {
+            setTitulo(atividade.titulo);
+            setMateria(atividade.materia || '');
+            setStatus(atividade.status_nome || itens[0]?.nome || STATUS_OPCOES[0]);
+
+            if (atividade.prazo) {
+              const dataPrazo = new Date(atividade.prazo);
+              if (!Number.isNaN(dataPrazo.getTime())) {
+                setPrazoDate(dataPrazo);
+                setPrazo(formatarDataParaExibir(dataPrazo));
+              }
+            }
+          } else {
+            setStatus(itens[0]?.nome || STATUS_OPCOES[0]);
+          }
+          setCarregandoAtividade(false);
         })
         .catch(() => {
-          if (ativo) Alert.alert('Erro', 'Não foi possível carregar os status.');
+          if (ativo) {
+            setCarregandoAtividade(false);
+            Alert.alert('Erro', 'Não foi possível carregar os dados da atividade.');
+          }
         });
 
       return () => {
         ativo = false;
       };
-    }, [])
+    }, [atividadeId, editando, navigation])
   );
 
   const dateParaISO = (dataObj) => {
     return dataObj.toISOString();
-  };
-
-  const formatarDataParaExibir = (dataObj) => {
-    const dia = String(dataObj.getDate()).padStart(2, '0');
-    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-    const ano = dataObj.getFullYear();
-    const hora = String(dataObj.getHours()).padStart(2, '0');
-    const minuto = String(dataObj.getMinutes()).padStart(2, '0');
-    return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
   };
 
   const parseDataPorTexto = (texto) => {
@@ -85,9 +125,21 @@ const AddActivityScreen = ({ navigation }) => {
     if (!match) return null;
 
     const [, dia, mes, ano, hora, minuto] = match;
-    const data = new Date(Number(ano), Number(mes) - 1, Number(dia), Number(hora), Number(minuto));
+    const anoNumero = Number(ano);
+    const mesNumero = Number(mes) - 1;
+    const diaNumero = Number(dia);
+    const horaNumero = Number(hora);
+    const minutoNumero = Number(minuto);
+    const data = new Date(anoNumero, mesNumero, diaNumero, horaNumero, minutoNumero);
 
-    if (Number.isNaN(data.getTime())) return null;
+    if (
+      Number.isNaN(data.getTime()) ||
+      data.getFullYear() !== anoNumero ||
+      data.getMonth() !== mesNumero ||
+      data.getDate() !== diaNumero ||
+      data.getHours() !== horaNumero ||
+      data.getMinutes() !== minutoNumero
+    ) return null;
 
     return data;
   };
@@ -166,6 +218,10 @@ const AddActivityScreen = ({ navigation }) => {
     setErrorMessage('');
 
     const prazoFinal = prazo ? parseDataPorTexto(prazo) : null;
+    if (prazo && !prazoFinal) {
+      setErrorMessage('Informe o prazo no formato DD/MM/AAAA HH:mm.');
+      return;
+    }
 
     const novaAtividade = {
       titulo: tituloLimpo,
@@ -182,21 +238,40 @@ const AddActivityScreen = ({ navigation }) => {
         'SELECT id FROM status WHERE nome = ?',
         [status]
       );
-      await banco.runAsync(
-        `INSERT INTO atividades (titulo, materia, prazo, status_id, criado_em)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          novaAtividade.titulo,
-          novaAtividade.materia || null,
-          novaAtividade.prazo,
-          statusBanco?.id ?? null,
-          new Date().toISOString(),
-        ]
-      );
+      let mensagemSucesso = editando
+        ? 'Atividade atualizada com sucesso.'
+        : 'Atividade cadastrada com sucesso.';
+
+      if (editando) {
+        const lembrete = await buscarLembreteAtividade(atividadeId);
+        if (lembrete) {
+          await cancelarNotificacaoLocal(lembrete.notificacao_id);
+          await excluirLembreteAtividade(atividadeId);
+          mensagemSucesso += ' O lembrete anterior foi removido; configure outro no detalhe se desejar.';
+        }
+        await atualizarAtividade(atividadeId, {
+          titulo: novaAtividade.titulo,
+          materia: novaAtividade.materia || null,
+          prazo: novaAtividade.prazo,
+          status_id: statusBanco?.id ?? null,
+        });
+      } else {
+        await banco.runAsync(
+          `INSERT INTO atividades (titulo, materia, prazo, status_id, criado_em)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            novaAtividade.titulo,
+            novaAtividade.materia || null,
+            novaAtividade.prazo,
+            statusBanco?.id ?? null,
+            new Date().toISOString(),
+          ]
+        );
+      }
 
       Alert.alert(
         'Sucesso',
-        'Atividade cadastrada com sucesso.',
+        mensagemSucesso,
         [
           {
             text: 'OK',
@@ -215,6 +290,16 @@ const AddActivityScreen = ({ navigation }) => {
       setSalvando(false);
     }
   };
+
+  if (carregandoAtividade) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.label}>Carregando atividade...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -318,7 +403,9 @@ const AddActivityScreen = ({ navigation }) => {
           disabled={salvando}
           activeOpacity={0.8}
         >
-          <Text style={styles.saveButtonText}>{salvando ? 'Salvando' : 'Salvar'}</Text>
+          <Text style={styles.saveButtonText}>
+            {salvando ? 'Salvando' : editando ? 'Salvar alterações' : 'Salvar'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity

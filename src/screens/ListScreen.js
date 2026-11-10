@@ -3,12 +3,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-    excluirAtividade,
-    inicializarBanco,
-    listarAtividades,
-    listarAtividadesPorStatus,
-    listarStatus,
+  buscarLembreteAtividade,
+  excluirAtividade,
+  excluirLembreteAtividade,
+  inicializarBanco,
+  listarAtividades,
+  listarAtividadesPorStatus,
+  listarStatus,
 } from '../data/database';
+import { cancelarNotificacaoLocal } from '../data/notifications';
 import { CORES } from '../data/theme';
 
 const carregarListaPorFiltro = (statusId) =>
@@ -126,6 +129,11 @@ const ListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              const lembrete = await buscarLembreteAtividade(atividade.id);
+              if (lembrete) {
+                await cancelarNotificacaoLocal(lembrete.notificacao_id);
+                await excluirLembreteAtividade(atividade.id);
+              }
               await excluirAtividade(atividade.id);
               const statusAtualizados = await listarStatus();
               const [listaAtualizada, totalConcluidas] = await Promise.all([
@@ -285,6 +293,15 @@ const ListScreen = ({ navigation }) => {
                 ? 'Nenhuma atividade cadastrada.'
                 : 'Nenhuma atividade com esse status.'}
             </Text>
+            {filtroAtivo === null && (
+              <TouchableOpacity
+                style={styles.emptyAction}
+                onPress={handleAddActivity}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyActionText}>Adicionar atividade</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
         contentContainerStyle={[styles.listContent, { width: contentWidth, paddingHorizontal: horizontalPadding, paddingBottom: 96 }]}
@@ -354,6 +371,21 @@ const styles = StyleSheet.create({
   emptyText: {
     color: CORES.textoSecundario,
     fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyAction: {
+    alignItems: 'center',
+    backgroundColor: CORES.primaria,
+    borderRadius: 8,
+    justifyContent: 'center',
+    marginTop: 16,
+    minHeight: 44,
+    paddingHorizontal: 16,
+  },
+  emptyActionText: {
+    color: CORES.textoBranco,
+    fontSize: 14,
+    fontWeight: '700',
   },
   cardContainer: {
     backgroundColor: CORES.cartao,

@@ -69,6 +69,14 @@ export async function inicializarBanco() {
         )
       `);
 
+      await banco.execAsync(`
+        CREATE TABLE IF NOT EXISTS lembretes (
+          atividade_id INTEGER PRIMARY KEY,
+          notificacao_id TEXT NOT NULL,
+          FOREIGN KEY (atividade_id) REFERENCES atividades (id) ON DELETE CASCADE
+        )
+      `);
+
       for (const nome of STATUS_OPCOES) {
         await banco.runAsync(
           'INSERT OR IGNORE INTO status (nome, cor, padrao) VALUES (?, ?, 1)',
@@ -192,6 +200,46 @@ export async function excluirAtividade(id) {
     return await banco.runAsync('DELETE FROM atividades WHERE id = ?', [id]);
   } catch (error) {
     console.log('Erro ao excluir atividade:', error);
+    throw error;
+  }
+}
+
+export async function buscarLembreteAtividade(atividade_id) {
+  try {
+    const banco = await inicializarBanco();
+    return await banco.getFirstAsync(
+      'SELECT notificacao_id FROM lembretes WHERE atividade_id = ?',
+      [atividade_id]
+    );
+  } catch (error) {
+    console.log('Erro ao buscar lembrete da atividade:', error);
+    throw error;
+  }
+}
+
+export async function salvarLembreteAtividade(atividade_id, notificacao_id) {
+  try {
+    const banco = await inicializarBanco();
+    return await banco.runAsync(
+      `INSERT INTO lembretes (atividade_id, notificacao_id) VALUES (?, ?)
+       ON CONFLICT (atividade_id) DO UPDATE SET notificacao_id = excluded.notificacao_id`,
+      [atividade_id, notificacao_id]
+    );
+  } catch (error) {
+    console.log('Erro ao salvar lembrete da atividade:', error);
+    throw error;
+  }
+}
+
+export async function excluirLembreteAtividade(atividade_id) {
+  try {
+    const banco = await inicializarBanco();
+    return await banco.runAsync(
+      'DELETE FROM lembretes WHERE atividade_id = ?',
+      [atividade_id]
+    );
+  } catch (error) {
+    console.log('Erro ao excluir lembrete da atividade:', error);
     throw error;
   }
 }

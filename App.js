@@ -32,7 +32,9 @@ const App = () => {
         <Stack.Screen
           name="Adicionar"
           component={AddActivityScreen}
-          options={{ title: 'Nova Atividade' }}
+          options={({ route }) => ({
+            title: route.params?.id ? 'Editar Atividade' : 'Nova Atividade',
+          })}
         />
         <Stack.Screen
           name="Avisos"

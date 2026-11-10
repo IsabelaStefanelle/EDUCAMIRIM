@@ -8,16 +8,16 @@ const PROJETOS = [
     materia: 'Física',
     prazo: '15/11',
     etapas: [
-      { titulo: 'Pesquisa de referências', responsavel: 'João', estado: 'Concluída' },
-      { titulo: 'Montagem do protótipo', responsavel: 'Maria', estado: 'Em andamento' },
-      { titulo: 'Criação dos slides', responsavel: 'Você', estado: 'A fazer' },
+      { titulo: 'Pesquisa de referências', responsavel: 'Câua', estado: 'Concluída' },
+      { titulo: 'Montagem do protótipo', responsavel: 'Emanuelle', estado: 'Em andamento' },
+      { titulo: 'Criação dos slides', responsavel: 'Câua', estado: 'A fazer' },
     ],
   },
   {
     nome: 'Apresentação de Literatura',
     materia: 'Português',
     prazo: '20/11',
-    etapas: [{ titulo: 'Leitura do livro', responsavel: 'Todos', estado: 'A fazer' }],
+    etapas: [{ titulo: 'Leitura do livro', responsavel: 'Câua e Emanuelle', estado: 'A fazer' }],
   },
 ];
 

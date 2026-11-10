@@ -3,12 +3,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CORES } from '../data/theme';
 
 const DIAS = [
-  { nome: 'Segunda-feira', aulas: ['Matemática', 'Português', 'História'] },
-  { nome: 'Terça-feira', aulas: ['Física', 'Biologia', 'Educação Física'] },
-  { nome: 'Quarta-feira', aulas: ['Química', 'Geografia', 'Inglês'] },
+  { nome: 'Segunda-feira', aulas: ['Matemática', 'Português', 'História', 'Inglês', 'Geografia'] },
+  { nome: 'Terça-feira', aulas: ['Física', 'Biologia', 'Educação Física', 'Química', 'Português'] },
+  { nome: 'Quarta-feira', aulas: ['Química', 'Geografia', 'Inglês', 'Matemática', 'Física'] },
 ];
 
-const HORARIOS = ['08:00', '10:00', '13:30'];
+const HORARIOS = [
+  '18:10 - 19:00',
+  '19:00 - 19:50',
+  '19:50 - 20:40',
+  '21:00 - 21:50',
+  '21:50 - 22:40',
+];
 
 export default function GradeScreen() {
   const { width } = useWindowDimensions();
@@ -20,7 +26,7 @@ export default function GradeScreen() {
         <View style={styles.heading}>
           <View>
             <Text style={styles.title}>Grade semanal</Text>
-            <Text style={styles.subtitle}>Horários de aula</Text>
+            <Text style={styles.subtitle}>Aulas de 50 min · intervalo 20:40–21:00</Text>
           </View>
           <Text style={styles.demoTag}>DEMONSTRAÇÃO</Text>
         </View>
@@ -29,10 +35,19 @@ export default function GradeScreen() {
           <View key={dia.nome} style={styles.daySection}>
             <Text style={styles.dayTitle}>{dia.nome}</Text>
             {dia.aulas.map((aula, index) => (
-              <View key={`${dia.nome}-${aula}`} style={styles.lessonRow}>
-                <Text style={styles.time}>{HORARIOS[index]}</Text>
-                <View style={styles.lessonDivider} />
-                <Text style={styles.subject}>{aula}</Text>
+              <View key={`${dia.nome}-${aula}`}>
+                <View style={styles.lessonRow}>
+                  <Text style={styles.time}>{HORARIOS[index]}</Text>
+                  <View style={styles.lessonDivider} />
+                  <Text style={styles.subject}>{aula}</Text>
+                </View>
+                {index === 2 && (
+                  <View style={styles.breakRow}>
+                    <Text style={styles.breakTime}>20:40 - 21:00</Text>
+                    <View style={styles.lessonDivider} />
+                    <Text style={styles.breakLabel}>Intervalo</Text>
+                  </View>
+                )}
               </View>
             ))}
           </View>
@@ -86,6 +101,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
     paddingTop: 14,
+    paddingBottom: 8,
   },
   dayTitle: {
     color: CORES.primaria,
@@ -104,7 +120,7 @@ const styles = StyleSheet.create({
     color: CORES.textoSecundario,
     fontSize: 13,
     fontWeight: '700',
-    width: 64,
+    width: 104,
   },
   lessonDivider: {
     backgroundColor: CORES.borda,
@@ -117,6 +133,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
+  },
+  breakRow: {
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 4,
+    flexDirection: 'row',
+    minHeight: 36,
+    marginVertical: 4,
+    paddingHorizontal: 6,
+  },
+  breakTime: {
+    color: '#8A4B08',
+    fontSize: 12,
+    fontWeight: '700',
+    width: 104,
+  },
+  breakLabel: {
+    color: '#8A4B08',
+    fontSize: 13,
+    fontWeight: '700',
   },
   disclaimer: {
     color: CORES.textoSecundario,

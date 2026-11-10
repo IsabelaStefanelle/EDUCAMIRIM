@@ -3,9 +3,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CORES } from '../data/theme';
 
 const AULAS = [
-  { horario: '18:10 - 19:00', materia: 'Português', professor: 'Prof. Ana' },
-  { horario: '19:50 - 20:40', materia: 'Matemática', professor: 'Cancelada · falta' },
-  { horario: '19:00 - 19:50', materia: 'História', professor: 'Prof. Carlos' },
+  { horario: '18:10 - 19:00', materia: 'Português', professor: 'Prof. Rafaela' },
+  { horario: '19:00 - 19:50', materia: 'História', professor: 'Prof. Cristiano' },
+  { horario: '19:50 - 20:40', materia: 'Matemática', professor: 'Cancelada · Prof. Cristiano' },
 ];
 
 export default function AvisosScreen() {
@@ -22,7 +22,7 @@ export default function AvisosScreen() {
         <View style={styles.alertCard}>
           <Text style={styles.alertTitle}>Aviso sobre a aula</Text>
           <Text style={styles.alertText}>
-            Exemplo fictício: a aula de Matemática das 10h está cancelada hoje.
+            Exemplo fictício: a aula de Matemática das 19h50 com Cristiano está cancelada hoje.
           </Text>
         </View>
 
