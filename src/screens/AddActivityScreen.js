@@ -18,24 +18,17 @@ import {
     atualizarAtividade,
     buscarAtividadePorId,
     buscarLembreteAtividade,
+    criarAtividade,
     excluirLembreteAtividade,
     inicializarBanco,
     listarStatus,
 } from '../data/database';
+import { formatarDataHora, parseDataHora } from '../data/dates';
 import { cancelarNotificacaoLocal } from '../data/notifications';
 import { STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
 
 const isWeb = Platform.OS === 'web';
-
-const formatarDataParaExibir = (dataObj) => {
-  const dia = String(dataObj.getDate()).padStart(2, '0');
-  const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-  const ano = dataObj.getFullYear();
-  const hora = String(dataObj.getHours()).padStart(2, '0');
-  const minuto = String(dataObj.getMinutes()).padStart(2, '0');
-  return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
-};
 
 const AddActivityScreen = ({ navigation, route }) => {
   const atividadeId = route.params?.id ?? null;
@@ -90,7 +83,7 @@ const AddActivityScreen = ({ navigation, route }) => {
               const dataPrazo = new Date(atividade.prazo);
               if (!Number.isNaN(dataPrazo.getTime())) {
                 setPrazoDate(dataPrazo);
-                setPrazo(formatarDataParaExibir(dataPrazo));
+                setPrazo(formatarDataHora(dataPrazo));
               }
             }
           } else {
@@ -113,35 +106,6 @@ const AddActivityScreen = ({ navigation, route }) => {
 
   const dateParaISO = (dataObj) => {
     return dataObj.toISOString();
-  };
-
-  const parseDataPorTexto = (texto) => {
-    if (!texto || texto.trim() === '') return null;
-
-    const valor = texto.trim();
-    const regex = /^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/;
-    const match = valor.match(regex);
-
-    if (!match) return null;
-
-    const [, dia, mes, ano, hora, minuto] = match;
-    const anoNumero = Number(ano);
-    const mesNumero = Number(mes) - 1;
-    const diaNumero = Number(dia);
-    const horaNumero = Number(hora);
-    const minutoNumero = Number(minuto);
-    const data = new Date(anoNumero, mesNumero, diaNumero, horaNumero, minutoNumero);
-
-    if (
-      Number.isNaN(data.getTime()) ||
-      data.getFullYear() !== anoNumero ||
-      data.getMonth() !== mesNumero ||
-      data.getDate() !== diaNumero ||
-      data.getHours() !== horaNumero ||
-      data.getMinutes() !== minutoNumero
-    ) return null;
-
-    return data;
   };
 
   const paraDateValido = (valor) => {
@@ -191,7 +155,7 @@ const AddActivityScreen = ({ navigation, route }) => {
             );
 
             setPrazoDate(dataFinal);
-            setPrazo(formatarDataParaExibir(dataFinal));
+            setPrazo(formatarDataHora(dataFinal));
           },
         });
       },
@@ -217,7 +181,7 @@ const AddActivityScreen = ({ navigation, route }) => {
 
     setErrorMessage('');
 
-    const prazoFinal = prazo ? parseDataPorTexto(prazo) : null;
+    const prazoFinal = prazo ? parseDataHora(prazo) : null;
     if (prazo && !prazoFinal) {
       setErrorMessage('Informe o prazo no formato DD/MM/AAAA HH:mm.');
       return;
@@ -256,17 +220,12 @@ const AddActivityScreen = ({ navigation, route }) => {
           status_id: statusBanco?.id ?? null,
         });
       } else {
-        await banco.runAsync(
-          `INSERT INTO atividades (titulo, materia, prazo, status_id, criado_em)
-           VALUES (?, ?, ?, ?, ?)`,
-          [
-            novaAtividade.titulo,
-            novaAtividade.materia || null,
-            novaAtividade.prazo,
-            statusBanco?.id ?? null,
-            new Date().toISOString(),
-          ]
-        );
+        await criarAtividade({
+          titulo: novaAtividade.titulo,
+          materia: novaAtividade.materia || null,
+          prazo: novaAtividade.prazo,
+          status_id: statusBanco?.id ?? null,
+        });
       }
 
       Alert.alert(
@@ -341,7 +300,7 @@ const AddActivityScreen = ({ navigation, route }) => {
             value={prazo}
             onChangeText={(texto) => {
               setPrazo(texto);
-              const dataSelecionada = parseDataPorTexto(texto);
+              const dataSelecionada = parseDataHora(texto);
               if (dataSelecionada) {
                 setPrazoDate(dataSelecionada);
               }
@@ -369,7 +328,7 @@ const AddActivityScreen = ({ navigation, route }) => {
                   setShowPicker(false);
                   if (selectedDate) {
                     setPrazoDate(selectedDate);
-                    setPrazo(formatarDataParaExibir(selectedDate));
+                    setPrazo(formatarDataHora(selectedDate));
                   }
                 }}
               />

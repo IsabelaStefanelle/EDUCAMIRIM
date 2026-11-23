@@ -3,14 +3,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  buscarLembreteAtividade,
-  excluirAtividade,
-  excluirLembreteAtividade,
-  inicializarBanco,
-  listarAtividades,
-  listarAtividadesPorStatus,
-  listarStatus,
+    buscarLembreteAtividade,
+    excluirAtividade,
+    excluirLembreteAtividade,
+    inicializarBanco,
+    listarAtividades,
+    listarAtividadesPorStatus,
+    listarStatus,
 } from '../data/database';
+import { formatarDataHora } from '../data/dates';
 import { cancelarNotificacaoLocal } from '../data/notifications';
 import { CORES } from '../data/theme';
 
@@ -153,21 +154,6 @@ const ListScreen = ({ navigation }) => {
     );
   };
 
-  const formatarDataParaExibir = (data) => {
-    if (!data) return 'Sem prazo';
-
-    const dataObj = new Date(data);
-    if (Number.isNaN(dataObj.getTime())) return data;
-
-    const dia = String(dataObj.getDate()).padStart(2, '0');
-    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-    const ano = dataObj.getFullYear();
-    const hora = String(dataObj.getHours()).padStart(2, '0');
-    const minuto = String(dataObj.getMinutes()).padStart(2, '0');
-
-    return `Até ${dia}/${mes}/${ano} às ${hora}:${minuto}`;
-  };
-  
   const renderActivityItem = ({ item }) => (
     <TouchableOpacity
       style={styles.cardContainer}
@@ -193,7 +179,9 @@ const ListScreen = ({ navigation }) => {
         <Text style={styles.subjectText}>{item.materia}</Text>
 
         <View style={styles.footerSection}>
-          <Text style={styles.deadlineText}>📆 {formatarDataParaExibir(item.prazo)}</Text>
+          <Text style={styles.deadlineText}>
+            📆 {formatarDataHora(item.prazo, { semPrazo: 'Sem prazo', prefixo: 'Até ', separador: ' às ' })}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>

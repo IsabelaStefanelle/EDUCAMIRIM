@@ -4,31 +4,17 @@ import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, Touch
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     atualizarStatusAtividade,
+    buscarAtividadePorId,
     buscarLembreteAtividade,
     excluirAtividade,
     excluirLembreteAtividade,
-    inicializarBanco,
     listarStatus,
     salvarLembreteAtividade,
 } from '../data/database';
+import { formatarDataHora } from '../data/dates';
 import { agendarLembreteDePrazo, cancelarNotificacaoLocal } from '../data/notifications';
 import { STATUS_COR_FALLBACK, STATUS_OPCOES } from '../data/status';
 import { CORES } from '../data/theme';
-
-const formatarPrazo = (prazo) => {
-  if (!prazo) return 'Não informado';
-
-  const data = new Date(prazo);
-  if (Number.isNaN(data.getTime())) return prazo;
-
-  const dia = String(data.getDate()).padStart(2, '0');
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const ano = data.getFullYear();
-  const hora = String(data.getHours()).padStart(2, '0');
-  const minuto = String(data.getMinutes()).padStart(2, '0');
-
-  return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
-};
 
 const DetailScreen = ({ route, navigation }) => {
   const { width } = useWindowDimensions();
@@ -49,23 +35,16 @@ const DetailScreen = ({ route, navigation }) => {
 
       const buscarAtividade = async () => {
         try {
-          const banco = await inicializarBanco();
           const [statusCarregados, atividadeAtual, lembrete] = await Promise.all([
             listarStatus(),
-            banco.getFirstAsync(
-              `SELECT a.id, a.titulo, a.materia, a.prazo, s.nome AS status, s.cor AS status_cor
-             FROM atividades a
-             LEFT JOIN status s ON s.id = a.status_id
-             WHERE a.id = ?`,
-              [id]
-            ),
+            buscarAtividadePorId(id),
             buscarLembreteAtividade(id),
           ]);
 
           if (ativo) {
             setStatusDisponiveis(statusCarregados);
             setAtividade(atividadeAtual);
-            setStatusAtual(atividadeAtual?.status || STATUS_OPCOES[0]);
+            setStatusAtual(atividadeAtual?.status_nome || STATUS_OPCOES[0]);
             setLembreteId(lembrete?.notificacao_id || null);
             setCarregando(false);
           }
@@ -110,7 +89,7 @@ const DetailScreen = ({ route, navigation }) => {
   };
 
   const handleSincronizarAgenda = () => {
-    const prazo = atividade.prazo ? formatarPrazo(atividade.prazo) : 'não informado';
+    const prazo = formatarDataHora(atividade.prazo, { semPrazo: 'não informado' });
     Alert.alert(
       'Prévia do Google Agenda',
       `Esta é apenas uma demonstração. O prazo ${prazo} não foi sincronizado com uma conta Google.`,
@@ -215,7 +194,7 @@ const DetailScreen = ({ route, navigation }) => {
         <Text style={styles.value}>{atividade.materia}</Text>
 
         <Text style={styles.label}>Prazo:</Text>
-        <Text style={styles.value}>{formatarPrazo(atividade.prazo)}</Text>
+        <Text style={styles.value}>{formatarDataHora(atividade.prazo, { semPrazo: 'Não informado' })}</Text>
 
         <Text style={styles.label}>Status atual:</Text>
         <View style={[styles.statusBadge, { backgroundColor: atividade.status_cor || STATUS_COR_FALLBACK }]}>
