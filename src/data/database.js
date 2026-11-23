@@ -232,7 +232,7 @@ export async function salvarLembreteAtividade(atividade_id, notificacao_id) {
 }
 
 export async function excluirLembreteAtividade(atividade_id) {
-  try {
+                                           try {
     const banco = await inicializarBanco();
     return await banco.runAsync(
       'DELETE FROM lembretes WHERE atividade_id = ?',
